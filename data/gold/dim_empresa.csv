@@ -1,0 +1,12 @@
+empresa_sk,ticker,cd_cvm,cnpj,nome,setor,grupo
+1,ABEV3,023264,07.526.557/0001-00,Ambev S.A.,Bebidas,Consumo e serviços
+2,EGIE3,017329,02.474.103/0001-19,Engie Brasil Energia S.A.,Energia Elétrica,Consumo e serviços
+3,EMBR3,020087,07.689.002/0001-89,Embraer S.A.,Máquinas e Equipamentos,Indústria
+4,GGBR4,003980,33.611.500/0001-19,Gerdau S.A.,Metalurgia e Siderurgia,Commodities
+5,JBSS3,020575,02.916.265/0001-60,JBS S.A.,Alimentos,Commodities
+6,KLBN11,012653,89.637.490/0001-45,Klabin S.A.,Papel e Celulose,Commodities
+7,LREN3,008133,92.754.738/0001-62,Lojas Renner S.A.,Comércio (varejo),Consumo e serviços
+8,PETR4,009512,33.000.167/0001-01,Petrobras,Petróleo e Gás,Commodities
+9,SUZB3,013986,16.404.287/0001-55,Suzano S.A.,Papel e Celulose,Commodities
+10,VALE3,004170,33.592.510/0001-54,Vale S.A.,Extração Mineral,Commodities
+11,WEGE3,005410,84.429.695/0001-11,WEG S.A.,Máquinas e Equipamentos,Indústria
