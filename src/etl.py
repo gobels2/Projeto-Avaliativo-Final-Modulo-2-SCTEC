@@ -9,9 +9,11 @@ Como rodar (a partir da pasta do projeto):
 """
 
 import zipfile
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
+import requests
 
 # caminhos relativos à pasta do projeto (funciona em qualquer computador)
 PASTA_RAIZ = Path(__file__).resolve().parent.parent
@@ -62,3 +64,25 @@ def ler_demonstrativo(caminho_zip, tipo, ano):
             # os arquivos da CVM vêm em latin-1; lendo como utf-8 dá erro nos acentos
             df = pd.read_csv(arquivo, sep=";", encoding="latin-1", dtype=str)
     return df
+
+
+def baixar_zips(pasta_zips):
+    """Baixa da CVM os zips que ainda não estão na pasta e registra a data do download."""
+    pasta_zips.mkdir(parents=True, exist_ok=True)
+    caminhos = []
+    baixou_algum = False
+    for ano in ANOS:
+        caminho = pasta_zips / f"dfp_cia_aberta_{ano}.zip"
+        if not caminho.exists():
+            print(f"Baixando o DFP de {ano}...")
+            resposta = requests.get(URL_CVM.format(ano=ano), timeout=120)
+            resposta.raise_for_status()
+            caminho.write_bytes(resposta.content)
+            baixou_algum = True
+        caminhos.append(caminho)
+
+    # a CVM republica os arquivos quando uma empresa reenvia o DFP, então guardamos a data
+    if baixou_algum:
+        registro = PASTA_DADOS / "bronze" / "data_download.txt"
+        registro.write_text(f"DFP da CVM baixados em {date.today():%d/%m/%Y}\n", encoding="utf-8")
+    return caminhos
