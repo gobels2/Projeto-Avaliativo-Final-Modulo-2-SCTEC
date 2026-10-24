@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ambientes virtuais
+venv/
+.venv/
+env/
+
+# Streamlit - credenciais do banco (NUNCA comitar)
+.streamlit/secrets.toml
+
+# Zips baixados da CVM (o src/etl.py baixa de novo)
+data/bronze/zips/
+
+# Jupyter e testes
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Editores
+.vscode/
+.idea/
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
