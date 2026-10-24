@@ -55,6 +55,23 @@ EMPRESAS = {
 # o Itaú (ITUB4) entra só na Bronze: banco usa outro plano de contas e sai na Silver
 CD_CVM_ITAU = "019348"
 
+# contas da CVM usadas nos indicadores: código -> nome da coluna
+CONTAS = {
+    "3.01": "receita",
+    "3.03": "lucro_bruto",
+    "3.05": "ebit",
+    "3.11": "lucro_liquido",
+    "1.01": "ativo_circulante",
+    "1.01.01": "caixa",
+    "1.01.02": "aplicacoes",
+    "2.01": "passivo_circulante",
+    "2.01.04": "emprestimos_cp",
+    "2.01.04.03": "arrendamentos_cp",
+    "2.02.01": "emprestimos_lp",
+    "2.02.01.03": "arrendamentos_lp",
+    "2.03": "patrimonio_liquido",
+}
+
 
 def ler_demonstrativo(caminho_zip, tipo, ano):
     """Lê um demonstrativo consolidado (DRE, BPA ou BPP) direto de dentro do zip da CVM."""
@@ -103,6 +120,57 @@ def montar_bronze(pasta_zips):
     return pd.concat(partes, ignore_index=True)
 
 
+def montar_silver(bronze, conferir=False):
+    """Limpa a Bronze: exercício certo, versão mais recente, só as contas usadas, valor em reais e datas."""
+    df = bronze.copy()
+
+    # Regra 1: cada arquivo traz o ano (ÚLTIMO) e o ano anterior (PENÚLTIMO); fica o ÚLTIMO
+    df = df[df["ORDEM_EXERC"] == "ÚLTIMO"].copy()
+    if conferir:
+        print(f"  depois do ÚLTIMO: {len(df)} linhas")
+
+    # Regra 2: quem reenviou o DFP tem mais de uma versão; fica a maior
+    # (vira número antes, porque como texto "10" vem antes de "9")
+    df["VERSAO"] = df["VERSAO"].astype(int)
+    maior_versao = df.groupby(["CD_CVM", "DT_REFER"])["VERSAO"].transform("max")
+    df = df[df["VERSAO"] == maior_versao].copy()
+    if conferir:
+        print(f"  depois da maior versão: {len(df)} linhas")
+
+    # Regra 3: só as 11 empresas analisadas (o Itaú sai aqui)
+    df = df[df["CD_CVM"].isin(list(EMPRESAS))].copy()
+    if conferir:
+        print(f"  depois de tirar o Itaú: {len(df)} linhas")
+
+    # Regra 4: só as contas usadas nos indicadores
+    df = df[df["CD_CONTA"].isin(list(CONTAS))].copy()
+    if conferir:
+        print(f"  depois de filtrar as contas: {len(df)} linhas")
+
+    # Regra 5: valor em reais (texto com ponto decimal; escala MIL = multiplicar por 1000)
+    df["valor"] = df["VL_CONTA"].astype(float)
+    df.loc[df["ESCALA_MOEDA"] == "MIL", "valor"] = df["valor"] * 1000
+
+    # Regra 6: datas de texto para datetime e o ano do exercício
+    for coluna in ["DT_REFER", "DT_INI_EXERC", "DT_FIM_EXERC"]:
+        if coluna in df.columns:
+            df[coluna] = pd.to_datetime(df[coluna], errors="coerce")
+    df["ano"] = df["DT_FIM_EXERC"].dt.year
+
+    # Regra 7: linhas repetidas saem
+    antes = len(df)
+    df = df.drop_duplicates()
+    if conferir:
+        print(f"  duplicadas removidas: {antes - len(df)}")
+
+    df["ticker"] = df["CD_CVM"].map(lambda codigo: EMPRESAS[codigo]["ticker"])
+    df["demonstrativo"] = df["ARQUIVO_ORIGEM"].str.split("_").str[3]
+    df = df.rename(columns={"CD_CVM": "cd_cvm", "CD_CONTA": "cd_conta", "DS_CONTA": "ds_conta",
+                            "VERSAO": "versao", "DT_REFER": "dt_refer"})
+    colunas = ["cd_cvm", "ticker", "ano", "demonstrativo", "cd_conta", "ds_conta", "valor", "versao", "dt_refer"]
+    return df[colunas].reset_index(drop=True)
+
+
 def main():
     # Passo 1: Bronze - baixa os zips e guarda as linhas brutas das empresas
     pasta_zips = PASTA_DADOS / "bronze" / "zips"
@@ -114,6 +182,13 @@ def main():
     print(f"Empresas: {bronze['CD_CVM'].nunique()}")
     print(f"Anos (DT_REFER): {sorted(bronze['DT_REFER'].str[:4].unique())}")
     print(f"Arquivos de origem: {bronze['ARQUIVO_ORIGEM'].nunique()}")
+
+    # Passo 2: Silver - exercício certo, versão mais recente, valores em reais e datas
+    print("=== Camada Silver ===")
+    silver = montar_silver(bronze, conferir=True)
+    silver.to_csv(PASTA_DADOS / "silver" / "contas_2021_2023.csv", index=False, encoding="utf-8")
+    print(f"Linhas: {len(silver)} | Empresas: {silver['ticker'].nunique()} | Anos: {sorted(silver['ano'].unique().tolist())}")
+    print(f"Nulos: {silver.isna().sum().sum()} | Duplicados: {silver.duplicated().sum()}")
 
 
 if __name__ == "__main__":
