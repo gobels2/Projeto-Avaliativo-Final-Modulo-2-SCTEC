@@ -86,3 +86,35 @@ def baixar_zips(pasta_zips):
         registro = PASTA_DADOS / "bronze" / "data_download.txt"
         registro.write_text(f"DFP da CVM baixados em {date.today():%d/%m/%Y}\n", encoding="utf-8")
     return caminhos
+
+
+def montar_bronze(pasta_zips):
+    """Junta DRE, BPA e BPP dos três anos e guarda só as linhas das empresas, sem alterar nada."""
+    codigos = list(EMPRESAS) + [CD_CVM_ITAU]
+    partes = []
+    for ano in ANOS:
+        caminho_zip = pasta_zips / f"dfp_cia_aberta_{ano}.zip"
+        for tipo in ["DRE", "BPA", "BPP"]:
+            df = ler_demonstrativo(caminho_zip, tipo, ano)
+            df = df[df["CD_CVM"].isin(codigos)].copy()
+            # guarda de qual arquivo veio cada linha (rastreabilidade)
+            df["ARQUIVO_ORIGEM"] = f"dfp_cia_aberta_{tipo}_con_{ano}.csv"
+            partes.append(df)
+    return pd.concat(partes, ignore_index=True)
+
+
+def main():
+    # Passo 1: Bronze - baixa os zips e guarda as linhas brutas das empresas
+    pasta_zips = PASTA_DADOS / "bronze" / "zips"
+    baixar_zips(pasta_zips)
+    bronze = montar_bronze(pasta_zips)
+    bronze.to_csv(PASTA_DADOS / "bronze" / "dfp_con_2021_2023.csv", index=False, encoding="utf-8")
+    print("=== Camada Bronze ===")
+    print(f"Linhas: {len(bronze)}")
+    print(f"Empresas: {bronze['CD_CVM'].nunique()}")
+    print(f"Anos (DT_REFER): {sorted(bronze['DT_REFER'].str[:4].unique())}")
+    print(f"Arquivos de origem: {bronze['ARQUIVO_ORIGEM'].nunique()}")
+
+
+if __name__ == "__main__":
+    main()
