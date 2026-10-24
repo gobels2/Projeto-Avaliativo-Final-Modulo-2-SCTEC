@@ -15,6 +15,8 @@ from pathlib import Path
 import pandas as pd
 import requests
 
+from indicadores import calcular_indicadores
+
 # caminhos relativos à pasta do projeto (funciona em qualquer computador)
 PASTA_RAIZ = Path(__file__).resolve().parent.parent
 PASTA_DADOS = PASTA_RAIZ / "data"
@@ -171,6 +173,43 @@ def montar_silver(bronze, conferir=False):
     return df[colunas].reset_index(drop=True)
 
 
+def pivotar_contas(silver):
+    """Passa a Silver do formato longo para uma linha por empresa-ano, com uma coluna por conta."""
+    df = silver.pivot(index=["cd_cvm", "ticker", "ano"], columns="cd_conta", values="valor")
+    df = df.rename(columns=CONTAS).reset_index()
+    df.columns.name = None
+    # nem toda empresa lança arrendamento: conta ausente vira 0
+    df["arrendamentos_cp"] = df["arrendamentos_cp"].fillna(0)
+    df["arrendamentos_lp"] = df["arrendamentos_lp"].fillna(0)
+    return df
+
+
+def montar_gold(silver):
+    """Monta o esquema estrela: dim_empresa, dim_tempo e a fato com os indicadores de cada empresa-ano."""
+    # dim_empresa: chave substituta em ordem alfabética de ticker (ABEV3 = 1 ... WEGE3 = 11)
+    dim_empresa = pd.DataFrame.from_dict(EMPRESAS, orient="index").rename_axis("cd_cvm").reset_index()
+    dim_empresa = dim_empresa.sort_values("ticker").reset_index(drop=True)
+    dim_empresa["empresa_sk"] = range(1, len(dim_empresa) + 1)
+    dim_empresa = dim_empresa[["empresa_sk", "ticker", "cd_cvm", "cnpj", "nome", "setor", "grupo"]]
+
+    # dim_tempo: um exercício fiscal por ano, de 1º de janeiro a 31 de dezembro
+    dim_tempo = pd.DataFrame({"tempo_sk": range(1, len(ANOS) + 1), "ano": ANOS})
+    dim_tempo["data_inicio"] = pd.to_datetime(dim_tempo["ano"].astype(str) + "-01-01")
+    dim_tempo["data_fim"] = pd.to_datetime(dim_tempo["ano"].astype(str) + "-12-31")
+
+    # fato: grão = uma linha por empresa por exercício, ligada às dimensões pelas chaves
+    fato = calcular_indicadores(pivotar_contas(silver))
+    fato = fato.merge(dim_empresa[["empresa_sk", "cd_cvm"]], on="cd_cvm")
+    fato = fato.merge(dim_tempo[["tempo_sk", "ano"]], on="ano")
+    fato = fato.sort_values(["empresa_sk", "tempo_sk"]).reset_index(drop=True)
+    fato["indicador_sk"] = range(1, len(fato) + 1)
+    colunas = ["indicador_sk", "empresa_sk", "tempo_sk", "receita", "lucro_bruto", "ebit", "lucro_liquido",
+               "ativo_circulante", "passivo_circulante", "patrimonio_liquido", "caixa", "aplicacoes",
+               "emprestimos", "arrendamentos", "divida_liquida", "margem_bruta", "margem_ebit", "margem_liquida",
+               "roe", "liquidez_corrente", "alavancagem", "alerta_liquidez", "alerta_divida"]
+    return dim_empresa, dim_tempo, fato[colunas]
+
+
 def main():
     # Passo 1: Bronze - baixa os zips e guarda as linhas brutas das empresas
     pasta_zips = PASTA_DADOS / "bronze" / "zips"
@@ -189,6 +228,20 @@ def main():
     silver.to_csv(PASTA_DADOS / "silver" / "contas_2021_2023.csv", index=False, encoding="utf-8")
     print(f"Linhas: {len(silver)} | Empresas: {silver['ticker'].nunique()} | Anos: {sorted(silver['ano'].unique().tolist())}")
     print(f"Nulos: {silver.isna().sum().sum()} | Duplicados: {silver.duplicated().sum()}")
+
+    # Passo 3: Gold - indicadores e esquema estrela (2 dimensões + 1 fato)
+    print("=== Camada Gold ===")
+    dim_empresa, dim_tempo, fato = montar_gold(silver)
+    pasta_gold = PASTA_DADOS / "gold"
+    dim_empresa.to_csv(pasta_gold / "dim_empresa.csv", index=False, encoding="utf-8")
+    dim_tempo.to_csv(pasta_gold / "dim_tempo.csv", index=False, encoding="utf-8")
+    fato.to_csv(pasta_gold / "fato_indicadores.csv", index=False, encoding="utf-8")
+    print(f"dim_empresa: {len(dim_empresa)} | dim_tempo: {len(dim_tempo)} | fato_indicadores: {len(fato)} (esperado 11 x 3 = 33)")
+    # toda linha da fato precisa achar a sua empresa e o seu ano nas dimensões
+    sem_empresa = (~fato["empresa_sk"].isin(dim_empresa["empresa_sk"])).sum()
+    sem_ano = (~fato["tempo_sk"].isin(dim_tempo["tempo_sk"])).sum()
+    print(f"Chaves sem correspondência: empresa {sem_empresa} | ano {sem_ano}")
+    print(f"Alavancagem vazia (EBIT zero ou negativo): {fato['alavancagem'].isna().sum()}")
 
 
 if __name__ == "__main__":
