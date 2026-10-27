@@ -469,9 +469,11 @@ with aba_rentabilidade:
                           hovertemplate="<b>%{customdata[0]}</b><br>Margem líquida: %{x:.1f}%<br>"
                                         "ROE: %{y:.1f}%<br>Receita: %{customdata[1]}<extra></extra>")
         fig.add_vline(x=mediana_margem * 100, line_dash="dash", line_color=COR_OUTRAS,
-                      annotation_text="mediana da margem", annotation_position="top")
+                      annotation_text="mediana da margem", annotation_position="bottom right")
         fig.add_hline(y=mediana_roe * 100, line_dash="dash", line_color=COR_OUTRAS,
                       annotation_text="mediana do ROE", annotation_position="right")
+        # folga em cima e embaixo para o nome da bolha mais alta não ser cortado
+        fig.update_yaxes(range=[pontos["roe_pct"].min() - 8, pontos["roe_pct"].max() + 8])
         st.plotly_chart(ajustar_layout(fig), width="stretch")
 
     # gráfico 7: margem EBIT por grupo em todos os anos do filtro (pontos da WEG em azul)
