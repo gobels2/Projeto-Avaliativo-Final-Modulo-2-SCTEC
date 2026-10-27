@@ -43,6 +43,70 @@ ORDER BY e.ticker, t.ano
 
 
 # ==============================================================================
+# FORMATAÇÃO NO PADRÃO BRASILEIRO (R$ 32,5 bi, 32,9%, 1,92x)
+# ==============================================================================
+def numero_br(valor, casas, sinal=False):
+    """Número com vírgula decimal e ponto de milhar; com sinal=True mostra o + na frente."""
+    texto = f"{valor:+,.{casas}f}" if sinal else f"{valor:,.{casas}f}"
+    return texto.replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def formatar_reais(valor):
+    """Valor em reais resumido: R$ 1,37 tri, R$ 32,5 bi, R$ 815,2 mi (negativo com - na frente)."""
+    sinal = "-" if valor < 0 else ""
+    valor = abs(valor)
+    if valor >= 1e12:
+        texto = numero_br(valor / 1e12, 2) + " tri"
+    elif valor >= 1e9:
+        texto = numero_br(valor / 1e9, 1) + " bi"
+    elif valor >= 1e6:
+        texto = numero_br(valor / 1e6, 1) + " mi"
+    else:
+        texto = numero_br(valor, 0)
+    return f"{sinal}R$ {texto}"
+
+
+def formatar_pct(valor):
+    """Fração em porcentagem com 1 casa: 0.329 vira 32,9%."""
+    if pd.isna(valor):
+        return "n/d"
+    return numero_br(valor * 100, 1) + "%"
+
+
+def formatar_vezes(valor):
+    """Indicador em vezes com 2 casas: 1,92x; vazio (EBIT negativo) vira n/d."""
+    if pd.isna(valor):
+        return "n/d"
+    return numero_br(valor, 2) + "x"
+
+
+def sem_comparacao(atual, anterior):
+    """Não dá para calcular a variação sem o ano anterior."""
+    return anterior is None or pd.isna(anterior) or pd.isna(atual)
+
+
+def delta_pct(atual, anterior):
+    """Variação em % contra o ano anterior; divide pelo valor absoluto para sair do prejuízo dar positivo."""
+    if sem_comparacao(atual, anterior) or anterior == 0:
+        return None
+    return numero_br((atual - anterior) / abs(anterior) * 100, 1, sinal=True) + "%"
+
+
+def delta_pp(atual, anterior):
+    """Variação em pontos percentuais (para margens e ROE)."""
+    if sem_comparacao(atual, anterior):
+        return None
+    return numero_br((atual - anterior) * 100, 1, sinal=True) + " p.p."
+
+
+def delta_num(atual, anterior):
+    """Variação simples com 2 casas (para a liquidez corrente)."""
+    if sem_comparacao(atual, anterior):
+        return None
+    return numero_br(atual - anterior, 2, sinal=True)
+
+
+# ==============================================================================
 # CONEXÃO COM O SUPABASE E PLANO B NO CSV
 # ==============================================================================
 @st.cache_resource  # abre a conexão uma vez só e reaproveita
