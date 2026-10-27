@@ -177,6 +177,19 @@ def ajustar_layout(fig):
     return fig
 
 
+def motivo_alerta(linha):
+    """Explica por que a empresa entrou em alerta na pergunta 4."""
+    motivos = []
+    if linha["alerta_liquidez"]:
+        motivos.append("liquidez abaixo de 1,5x")
+    if linha["alerta_divida"]:
+        if linha["ebit"] <= 0:
+            motivos.append("EBIT negativo com dívida")
+        else:
+            motivos.append("dívida acima de 3x o EBIT")
+    return "; ".join(motivos)
+
+
 def kpis_do_ano(dados):
     """Os 4 números da carteira num ano: soma da receita e do lucro, média simples do ROE e da liquidez."""
     if dados.empty:
@@ -478,7 +491,73 @@ with aba_rentabilidade:
         st.plotly_chart(ajustar_layout(fig), width="stretch")
 
 with aba_solvencia:
-    st.caption("Gráficos de liquidez e dívida: próxima etapa.")
+    st.subheader(f"Liquidez e dívida em {ultimo_ano}")
+
+    em_alerta = atual[atual["alerta_liquidez"] | atual["alerta_divida"]].sort_values("ticker")
+    liquidez_baixa = atual.loc[atual["alerta_liquidez"], "ticker"].tolist()
+    divida_alta = atual.loc[atual["alerta_divida"], "ticker"].tolist()
+    contexto = ("Liquidez corrente: quanto a empresa tem no curto prazo para cada real que deve no curto prazo. "
+                "Alavancagem: quantos anos de EBIT pagariam a dívida líquida.")
+    insight = (f"Em {ultimo_ano}, {len(liquidez_baixa)} empresa(s) ficaram abaixo de 1,5x de liquidez "
+               f"({', '.join(liquidez_baixa) or 'nenhuma'}) e {len(divida_alta)} passaram de 3x de alavancagem "
+               f"ou tinham EBIT negativo com dívida ({', '.join(divida_alta) or 'nenhuma'}).")
+    acao = ("Para o gestor financeiro e o investidor: olhar os dois alertas juntos antes de investir ou conceder "
+            "crédito. Liquidez baixa com caixa maior que a dívida (dívida líquida negativa) pesa menos que liquidez "
+            "baixa com dívida alta.")
+    texto_piramide(contexto, insight, acao)
+
+    solv = atual.copy()
+    solv["situacao"] = "Sem alerta"
+    SITUACOES = ["WEG", "Sem alerta", "Em alerta"]  # mesma ordem de legenda nos dois gráficos
+    graf1, graf2 = st.columns(2)
+
+    # gráfico 8: liquidez corrente com a linha de corte em 1,5x
+    with graf1:
+        liq = solv.sort_values("liquidez_corrente", ascending=False)
+        liq.loc[liq["alerta_liquidez"], "situacao"] = "Em alerta"
+        liq.loc[liq["ticker"] == "WEGE3", "situacao"] = "WEG"
+        liq["rotulo"] = liq["liquidez_corrente"].apply(formatar_vezes)
+        fig = px.bar(liq, x="ticker", y="liquidez_corrente", color="situacao", text="rotulo",
+                     color_discrete_map={"WEG": COR_WEG, "Sem alerta": COR_OUTRAS, "Em alerta": COR_ALERTA},
+                     category_orders={"ticker": liq["ticker"].tolist(), "situacao": SITUACOES},
+                     title=f"Liquidez corrente em {ultimo_ano}",
+                     labels={"ticker": "Empresa", "liquidez_corrente": "Liquidez corrente (x)", "situacao": ""})
+        fig.update_traces(textposition="outside", cliponaxis=False,
+                          hovertemplate="<b>%{x}</b>: %{text}<extra></extra>")
+        fig.add_hline(y=1.5, line_dash="dash", line_color=COR_ALERTA,
+                      annotation_text="1,5x", annotation_position="top right")
+        st.plotly_chart(ajustar_layout(fig), width="stretch")
+
+    # gráfico 9: dívida líquida em R$ bi (negativa = caixa líquido), com a alavancagem escrita na barra
+    with graf2:
+        div = solv.sort_values("divida_liquida", ascending=False)
+        div.loc[div["alerta_divida"], "situacao"] = "Em alerta"
+        div.loc[div["ticker"] == "WEGE3", "situacao"] = "WEG"
+        div["divida_bi"] = div["divida_liquida"] / 1e9
+        div["rotulo"] = div["alavancagem"].apply(formatar_vezes)
+        div["valor"] = div["divida_liquida"].apply(formatar_reais)
+        fig = px.bar(div, x="ticker", y="divida_bi", color="situacao", text="rotulo", custom_data=["valor"],
+                     color_discrete_map={"WEG": COR_WEG, "Sem alerta": COR_OUTRAS, "Em alerta": COR_ALERTA},
+                     category_orders={"ticker": div["ticker"].tolist(), "situacao": SITUACOES},
+                     title=f"Dívida líquida em {ultimo_ano} (texto = dívida líquida / EBIT)",
+                     labels={"ticker": "Empresa", "divida_bi": "Dívida líquida (R$ bilhões)", "situacao": ""})
+        fig.update_traces(textposition="outside", cliponaxis=False,
+                          hovertemplate="<b>%{x}</b><br>Dívida líquida: %{customdata[0]}<br>"
+                                        "Alavancagem: %{text}<extra></extra>")
+        st.plotly_chart(ajustar_layout(fig), width="stretch")
+
+    # tabela das empresas em alerta (pergunta 4)
+    st.markdown(f"**Empresas em alerta em {ultimo_ano}**")
+    if em_alerta.empty:
+        st.success("Nenhuma empresa em alerta no período.")
+    else:
+        tabela_alerta = pd.DataFrame({
+            "ticker": em_alerta["ticker"],
+            "liquidez_corrente": em_alerta["liquidez_corrente"].apply(formatar_vezes),
+            "alavancagem": em_alerta["alavancagem"].apply(formatar_vezes),
+            "motivo": em_alerta.apply(motivo_alerta, axis=1),
+        })
+        st.dataframe(tabela_alerta, width="stretch", hide_index=True)
 
 with aba_dados:
     st.subheader("Dados filtrados")
