@@ -81,9 +81,33 @@ def carregar_dados():
         return ler_csv_local(), "CSV local (data/gold)", erro
 
 
+def filtrar(df, grupos, empresas, anos):
+    """Aplica os filtros da barra lateral: grupos, empresas e intervalo de anos."""
+    filtro = df["grupo"].isin(grupos) & df["ticker"].isin(empresas) & df["ano"].between(anos[0], anos[1])
+    return df[filtro]
+
+
 df, origem, erro = carregar_dados()
 
-# de onde vieram os dados, na barra lateral
+# ==============================================================================
+# FILTROS NA BARRA LATERAL (com session_state)
+# ==============================================================================
+GRUPOS = sorted(df["grupo"].unique().tolist())
+EMPRESAS = sorted(df["ticker"].unique().tolist())
+ANOS = sorted(df["ano"].unique().tolist())
+
+# valor padrão só na primeira execução; depois o session_state guarda a escolha
+st.session_state.setdefault("filtro_grupos", GRUPOS)
+st.session_state.setdefault("filtro_empresas", EMPRESAS)
+
+st.sidebar.header("Filtros")
+grupos = st.sidebar.multiselect("Grupo de setor", GRUPOS, key="filtro_grupos")
+empresas = st.sidebar.multiselect("Empresas", EMPRESAS, key="filtro_empresas")
+# o select_slider só funciona como intervalo quando o value é uma tupla (por isso não usa o setdefault)
+anos = st.sidebar.select_slider("Período", options=ANOS, value=(ANOS[0], ANOS[-1]), key="filtro_anos")
+
+# de onde vieram os dados
+st.sidebar.divider()
 if erro is None:
     st.sidebar.markdown(f"🟢 Dados do {origem}")
 else:
@@ -92,5 +116,7 @@ else:
         st.caption(f"Não foi possível consultar o Supabase: {type(erro).__name__}")
         st.caption(str(erro)[:300])
 
-st.dataframe(df, width="stretch")
-st.caption(f"{len(df)} linhas carregadas")
+df_filtrado = filtrar(df, grupos, empresas, anos)
+
+st.dataframe(df_filtrado, width="stretch")
+st.caption(f"{len(df_filtrado)} linhas carregadas")
