@@ -144,12 +144,14 @@ def ler_csv_local():
     return df[COLUNAS].sort_values(["ticker", "ano"]).reset_index(drop=True)
 
 
+# guarda também a decisão por 10 minutos: com o banco fora do ar, o app não tenta de novo a cada clique
+@st.cache_data(ttl=600, show_spinner=False)
 def carregar_dados():
-    """Tenta o Supabase; se falhar, usa o CSV local e devolve o erro para mostrar na barra lateral."""
+    """Tenta o Supabase; se falhar, usa o CSV local e devolve o erro (em texto) para mostrar na barra lateral."""
     try:
         return consultar_supabase(), "Supabase (PostgreSQL)", None
     except Exception as erro:
-        return ler_csv_local(), "CSV local (data/gold)", erro
+        return ler_csv_local(), "CSV local (data/gold)", f"{type(erro).__name__}: {erro}"
 
 
 def filtrar(df, grupos, empresas, anos):
@@ -246,8 +248,8 @@ if erro is None:
 else:
     st.sidebar.markdown(f"🟡 Dados do {origem}")
     with st.sidebar.expander("Por que o CSV?"):
-        st.caption(f"Não foi possível consultar o Supabase: {type(erro).__name__}")
-        st.caption(str(erro)[:300])
+        st.caption("Não foi possível consultar o Supabase. O app tenta de novo em 10 minutos.")
+        st.caption(erro[:300])
 st.sidebar.caption("Fonte: CVM - Dados Abertos (DFP 2021–2023)")
 
 # ==============================================================================
