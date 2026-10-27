@@ -81,9 +81,51 @@ def carregar_dados():
         return ler_csv_local(), "CSV local (data/gold)", erro
 
 
+def filtrar(df, grupos, empresas, anos):
+    """Aplica os filtros da barra lateral: grupos, empresas e intervalo de anos."""
+    filtro = df["grupo"].isin(grupos) & df["ticker"].isin(empresas) & df["ano"].between(anos[0], anos[1])
+    return df[filtro]
+
+
 df, origem, erro = carregar_dados()
 
-# de onde vieram os dados, na barra lateral
+# ==============================================================================
+# FILTROS NA BARRA LATERAL (com session_state)
+# ==============================================================================
+GRUPOS = sorted(df["grupo"].unique().tolist())
+ANOS = sorted(df["ano"].unique().tolist())
+
+
+def empresas_dos_grupos(grupos):
+    """Tickers das empresas que pertencem aos grupos escolhidos."""
+    return sorted(df.loc[df["grupo"].isin(grupos), "ticker"].unique().tolist())
+
+
+def atualizar_empresas():
+    """Filtro cruzado: quando os grupos mudam, a lista de empresas passa a ter todas as desses grupos."""
+    st.session_state["filtro_empresas"] = empresas_dos_grupos(st.session_state["filtro_grupos"])
+
+
+def resetar_filtros():
+    """Volta os filtros ao padrão: todos os grupos, todas as empresas e todos os anos."""
+    st.session_state["filtro_grupos"] = GRUPOS
+    st.session_state["filtro_empresas"] = empresas_dos_grupos(GRUPOS)
+    st.session_state["filtro_anos"] = (ANOS[0], ANOS[-1])
+
+
+# valor padrão só na primeira execução; depois o session_state guarda a escolha
+st.session_state.setdefault("filtro_grupos", GRUPOS)
+st.session_state.setdefault("filtro_empresas", empresas_dos_grupos(GRUPOS))
+
+st.sidebar.header("Filtros")
+grupos = st.sidebar.multiselect("Grupo de setor", GRUPOS, key="filtro_grupos", on_change=atualizar_empresas)
+empresas = st.sidebar.multiselect("Empresas", empresas_dos_grupos(grupos), key="filtro_empresas")
+# o select_slider só funciona como intervalo quando o value é uma tupla (por isso não usa o setdefault)
+anos = st.sidebar.select_slider("Período", options=ANOS, value=(ANOS[0], ANOS[-1]), key="filtro_anos")
+st.sidebar.button("🔄 Restaurar filtros", key="botao_reset", on_click=resetar_filtros, width="stretch")
+
+# de onde vieram os dados
+st.sidebar.divider()
 if erro is None:
     st.sidebar.markdown(f"🟢 Dados do {origem}")
 else:
@@ -91,6 +133,14 @@ else:
     with st.sidebar.expander("Por que o CSV?"):
         st.caption(f"Não foi possível consultar o Supabase: {type(erro).__name__}")
         st.caption(str(erro)[:300])
+st.sidebar.caption("Fonte: CVM - Dados Abertos (DFP 2021–2023)")
 
-st.dataframe(df, width="stretch")
-st.caption(f"{len(df)} linhas carregadas")
+# sem grupo ou sem empresa não há o que mostrar: avisa e para aqui
+if not grupos or not empresas:
+    st.warning("Selecione pelo menos um grupo e uma empresa na barra lateral.")
+    st.stop()
+
+df_filtrado = filtrar(df, grupos, empresas, anos)
+
+st.dataframe(df_filtrado, width="stretch")
+st.caption(f"{len(df_filtrado)} linhas carregadas")
