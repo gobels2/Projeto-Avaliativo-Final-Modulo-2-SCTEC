@@ -285,5 +285,65 @@ with aba_solvencia:
     st.caption("Gráficos de liquidez e dívida: próxima etapa.")
 
 with aba_dados:
-    st.dataframe(df_filtrado, width="stretch")
-    st.caption(f"{len(df_filtrado)} linhas carregadas")
+    st.subheader("Dados filtrados")
+
+    # na tela: reais em bilhões e margens/ROE em %; o download leva os números completos
+    colunas_reais = COLUNAS_NUMERICAS[:12]
+    colunas_pct = ["margem_bruta", "margem_ebit", "margem_liquida", "roe"]
+    tabela = df_filtrado.copy()
+    tabela[colunas_reais] = (tabela[colunas_reais] / 1e9).round(2)
+    tabela[colunas_pct] = (tabela[colunas_pct] * 100).round(1)
+    tabela[["liquidez_corrente", "alavancagem"]] = tabela[["liquidez_corrente", "alavancagem"]].round(2)
+
+    configuracao = {"ano": st.column_config.NumberColumn("ano", format="%d")}
+    for coluna in colunas_reais:
+        configuracao[coluna] = st.column_config.NumberColumn(f"{coluna} (R$ bi)", format="localized")
+    for coluna in colunas_pct:
+        configuracao[coluna] = st.column_config.NumberColumn(f"{coluna} (%)", format="localized")
+    for coluna in ["liquidez_corrente", "alavancagem"]:
+        configuracao[coluna] = st.column_config.NumberColumn(f"{coluna} (x)", format="localized")
+
+    st.dataframe(tabela, width="stretch", hide_index=True, column_config=configuracao)
+    st.caption(f"{len(tabela)} linhas, uma por empresa e ano. Alavancagem vazia = EBIT zero ou negativo.")
+
+    # CSV com ; e vírgula decimal, para abrir direto no Excel em português
+    csv = df_filtrado.to_csv(index=False, sep=";", decimal=",").encode("utf-8-sig")
+    st.download_button("📥 Baixar dados filtrados (CSV)", data=csv,
+                       file_name="weg_em_numeros_filtrado.csv", mime="text/csv")
+
+    with st.expander("📖 Dicionário de dados"):
+        st.markdown("""
+| Coluna | O que é |
+|---|---|
+| receita | receita líquida de vendas e serviços (conta 3.01 da DRE) |
+| lucro_bruto | receita menos o custo do que foi vendido (3.03) |
+| ebit | resultado antes do resultado financeiro e dos impostos (3.05) |
+| lucro_liquido | lucro líquido consolidado, com a parte dos minoritários (3.11) |
+| ativo_circulante / passivo_circulante | o que vira dinheiro / o que vence em até 12 meses (1.01 / 2.01) |
+| patrimonio_liquido | patrimônio líquido consolidado no fim do ano (2.03) |
+| caixa / aplicacoes | caixa e equivalentes (1.01.01) / aplicações financeiras (1.01.02) |
+| emprestimos / arrendamentos | empréstimos de curto + longo prazo (2.01.04 + 2.02.01) / arrendamentos (2.01.04.03 + 2.02.01.03) |
+| divida_liquida | empréstimos - arrendamentos - caixa - aplicações; negativa = mais caixa que dívida |
+| margem_bruta / margem_ebit / margem_liquida | lucro bruto / EBIT / lucro líquido divididos pela receita |
+| roe | lucro líquido / patrimônio líquido |
+| liquidez_corrente | ativo circulante / passivo circulante |
+| alavancagem | dívida líquida / EBIT; vazia quando o EBIT é zero ou negativo |
+| alerta_liquidez / alerta_divida | liquidez abaixo de 1,5x / alavancagem acima de 3x, ou EBIT negativo com dívida |
+
+O dicionário completo, com os tipos de cada coluna, está no README do repositório.
+""")
+
+    with st.expander("⚠️ Limitações dos dados"):
+        st.markdown("""
+- O lucro é o **consolidado** (inclui os minoritários). As notícias costumam usar o lucro dos controladores
+  (WEG 2023: R$ 5,87 bi consolidado contra R$ 5,73 bi dos controladores).
+- O EBIT da CVM (conta 3.05) inclui a equivalência patrimonial (pesa na Vale, na Petrobras e na Engie).
+- A alavancagem usa o EBIT e não o EBITDA, porque a depreciação não vem nos três arquivos usados.
+  Com o EBIT o número fica um pouco maior, ou seja, mais conservador.
+- A dívida líquida não conta derivativos nem arrendamentos. As empresas às vezes contam,
+  então o número pode ser diferente do release.
+- A receita da Renner inclui cerca de R$ 2,0 bi de serviços financeiros, e o lucro da Vale em 2021 e 2022
+  inclui operações descontinuadas.
+- O Itaú (ITUB4) ficou de fora: banco usa outro plano de contas e os indicadores não se comparam.
+- São três anos e onze empresas: os números mostram o que aconteceu, não explicam por que aconteceu.
+""")
