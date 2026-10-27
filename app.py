@@ -151,6 +151,18 @@ def filtrar(df, grupos, empresas, anos):
     return df[filtro]
 
 
+def kpis_do_ano(dados):
+    """Os 4 números da carteira num ano: soma da receita e do lucro, média simples do ROE e da liquidez."""
+    if dados.empty:
+        return {}
+    return {
+        "receita": dados["receita"].sum(),
+        "lucro": dados["lucro_liquido"].sum(),
+        "roe": dados["roe"].mean(),
+        "liquidez": dados["liquidez_corrente"].mean(),
+    }
+
+
 df, origem, erro = carregar_dados()
 
 # ==============================================================================
@@ -199,12 +211,44 @@ else:
         st.caption(str(erro)[:300])
 st.sidebar.caption("Fonte: CVM - Dados Abertos (DFP 2021–2023)")
 
+# ==============================================================================
+# TOPO: TÍTULO E KPIs DA CARTEIRA FILTRADA
+# ==============================================================================
+st.title("🏭 WEG em números (2021–2023)")
+st.caption("A empresa que mais gerou bilionários no Brasil (Forbes), comparada a 10 gigantes da bolsa")
+
 # sem grupo ou sem empresa não há o que mostrar: avisa e para aqui
 if not grupos or not empresas:
     st.warning("Selecione pelo menos um grupo e uma empresa na barra lateral.")
     st.stop()
 
 df_filtrado = filtrar(df, grupos, empresas, anos)
+
+# KPIs no último ano do filtro; o delta compara com o ano anterior (base completa, mesmas empresas)
+ultimo_ano = anos[1]
+atual = df_filtrado[df_filtrado["ano"] == ultimo_ano]
+anterior = df[(df["ano"] == ultimo_ano - 1) & df["ticker"].isin(atual["ticker"])]
+k_atual = kpis_do_ano(atual)
+k_anterior = kpis_do_ano(anterior)
+
+if k_anterior:
+    st.markdown(f"**Carteira filtrada: {len(atual)} empresas em {ultimo_ano}**, com a variação contra {ultimo_ano - 1}")
+else:
+    st.markdown(f"**Carteira filtrada: {len(atual)} empresas em {ultimo_ano}** (sem ano anterior na base para comparar)")
+
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Receita líquida total", formatar_reais(k_atual["receita"]),
+            delta_pct(k_atual["receita"], k_anterior.get("receita")), border=True,
+            help="Soma da receita líquida (conta 3.01) das empresas filtradas.")
+col2.metric("Lucro líquido total", formatar_reais(k_atual["lucro"]),
+            delta_pct(k_atual["lucro"], k_anterior.get("lucro")), border=True,
+            help="Soma do lucro líquido consolidado (conta 3.11) das empresas filtradas.")
+col3.metric("ROE médio", formatar_pct(k_atual["roe"]),
+            delta_pp(k_atual["roe"], k_anterior.get("roe")), border=True,
+            help="Média simples do ROE (lucro líquido / patrimônio líquido) entre as empresas.")
+col4.metric("Liquidez corrente média", formatar_vezes(k_atual["liquidez"]),
+            delta_num(k_atual["liquidez"], k_anterior.get("liquidez")), border=True,
+            help="Média simples de ativo circulante / passivo circulante. Abaixo de 1,5x é alerta.")
 
 st.dataframe(df_filtrado, width="stretch")
 st.caption(f"{len(df_filtrado)} linhas carregadas")
