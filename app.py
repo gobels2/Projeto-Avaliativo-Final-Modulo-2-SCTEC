@@ -421,7 +421,61 @@ with aba_crescimento:
         st.plotly_chart(ajustar_layout(fig), width="stretch")
 
 with aba_rentabilidade:
-    st.caption("Gráficos de margens e ROE: próxima etapa.")
+    st.subheader(f"Margem e retorno em {ultimo_ano}")
+
+    ranking = atual.sort_values("roe", ascending=False).reset_index(drop=True)
+    primeira = ranking.iloc[0]
+    mediana_roe = ranking["roe"].median()
+    mediana_margem = ranking["margem_liquida"].median()
+    insight = (f"Em {ultimo_ano}, o maior ROE foi da {primeira['ticker']} ({formatar_pct(primeira['roe'])}); "
+               f"a mediana das {len(ranking)} empresas selecionadas foi {formatar_pct(mediana_roe)}.")
+    if "WEGE3" in set(ranking["ticker"]):
+        posicao = ranking.index[ranking["ticker"] == "WEGE3"][0] + 1
+        roe_weg = ranking.loc[ranking["ticker"] == "WEGE3", "roe"].iloc[0]
+        insight += f" A WEG ficou em {posicao}º lugar, com ROE de {formatar_pct(roe_weg)}."
+    contexto = ("O ROE mostra quanto lucro a empresa gerou para cada real dos sócios; a margem líquida, "
+                "quanto de cada real vendido virou lucro.")
+    acao = ("Para o investidor: comparar cada empresa com a mediana (linhas tracejadas), e não com a média, "
+            "que é puxada pelos casos extremos. Quem fica acima e à direita das duas linhas junta margem e retorno altos.")
+    texto_piramide(contexto, insight, acao)
+
+    graf1, graf2 = st.columns(2)
+
+    # gráfico 6: quadrantes margem líquida x ROE, bolha do tamanho da receita
+    with graf1:
+        pontos = atual.assign(margem_pct=atual["margem_liquida"] * 100, roe_pct=atual["roe"] * 100,
+                              rotulo=atual["receita"].apply(formatar_reais))
+        pontos["destaque"] = "Outras"
+        pontos.loc[pontos["ticker"] == "WEGE3", "destaque"] = "WEG"
+        fig = px.scatter(pontos, x="margem_pct", y="roe_pct", size="receita", text="ticker", color="destaque",
+                         color_discrete_map={"WEG": COR_WEG, "Outras": COR_OUTRAS}, size_max=45,
+                         custom_data=["nome", "rotulo"],
+                         title=f"Margem líquida x ROE em {ultimo_ano} (bolha = receita)",
+                         labels={"margem_pct": "Margem líquida (%)", "roe_pct": "ROE (%)", "destaque": ""})
+        fig.update_traces(textposition="top center",
+                          hovertemplate="<b>%{customdata[0]}</b><br>Margem líquida: %{x:.1f}%<br>"
+                                        "ROE: %{y:.1f}%<br>Receita: %{customdata[1]}<extra></extra>")
+        fig.add_vline(x=mediana_margem * 100, line_dash="dash", line_color=COR_OUTRAS,
+                      annotation_text="mediana da margem", annotation_position="top")
+        fig.add_hline(y=mediana_roe * 100, line_dash="dash", line_color=COR_OUTRAS,
+                      annotation_text="mediana do ROE", annotation_position="right")
+        st.plotly_chart(ajustar_layout(fig), width="stretch")
+
+    # gráfico 7: margem EBIT por grupo em todos os anos do filtro (pontos da WEG em azul)
+    with graf2:
+        caixas = df_filtrado.assign(margem_ebit_pct=df_filtrado["margem_ebit"] * 100)
+        fig = px.box(caixas, x="grupo", y="margem_ebit_pct", points="all", hover_data=["ticker", "ano"],
+                     category_orders={"grupo": GRUPOS}, color_discrete_sequence=[COR_OUTRAS],
+                     title=f"Margem EBIT por grupo ({anos[0]} a {ultimo_ano})",
+                     labels={"grupo": "Grupo", "margem_ebit_pct": "Margem EBIT (%)"})
+        fig.update_traces(name="Todas as empresas", showlegend=True)
+        weg_caixas = caixas[caixas["ticker"] == "WEGE3"]
+        if not weg_caixas.empty:
+            fig.add_scatter(x=weg_caixas["grupo"], y=weg_caixas["margem_ebit_pct"], mode="markers", name="WEG",
+                            marker=dict(color=COR_WEG, size=10, line=dict(color="white", width=2)),
+                            customdata=weg_caixas["ano"],
+                            hovertemplate="<b>WEG</b> %{customdata}: %{y:.1f}%<extra></extra>")
+        st.plotly_chart(ajustar_layout(fig), width="stretch")
 
 with aba_solvencia:
     st.caption("Gráficos de liquidez e dívida: próxima etapa.")
