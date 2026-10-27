@@ -106,6 +106,13 @@ def atualizar_empresas():
     st.session_state["filtro_empresas"] = empresas_dos_grupos(st.session_state["filtro_grupos"])
 
 
+def resetar_filtros():
+    """Volta os filtros ao padrão: todos os grupos, todas as empresas e todos os anos."""
+    st.session_state["filtro_grupos"] = GRUPOS
+    st.session_state["filtro_empresas"] = empresas_dos_grupos(GRUPOS)
+    st.session_state["filtro_anos"] = (ANOS[0], ANOS[-1])
+
+
 # valor padrão só na primeira execução; depois o session_state guarda a escolha
 st.session_state.setdefault("filtro_grupos", GRUPOS)
 st.session_state.setdefault("filtro_empresas", empresas_dos_grupos(GRUPOS))
@@ -115,6 +122,7 @@ grupos = st.sidebar.multiselect("Grupo de setor", GRUPOS, key="filtro_grupos", o
 empresas = st.sidebar.multiselect("Empresas", empresas_dos_grupos(grupos), key="filtro_empresas")
 # o select_slider só funciona como intervalo quando o value é uma tupla (por isso não usa o setdefault)
 anos = st.sidebar.select_slider("Período", options=ANOS, value=(ANOS[0], ANOS[-1]), key="filtro_anos")
+st.sidebar.button("🔄 Restaurar filtros", key="botao_reset", on_click=resetar_filtros, width="stretch")
 
 # de onde vieram os dados
 st.sidebar.divider()
@@ -125,6 +133,12 @@ else:
     with st.sidebar.expander("Por que o CSV?"):
         st.caption(f"Não foi possível consultar o Supabase: {type(erro).__name__}")
         st.caption(str(erro)[:300])
+st.sidebar.caption("Fonte: CVM - Dados Abertos (DFP 2021–2023)")
+
+# sem grupo ou sem empresa não há o que mostrar: avisa e para aqui
+if not grupos or not empresas:
+    st.warning("Selecione pelo menos um grupo e uma empresa na barra lateral.")
+    st.stop()
 
 df_filtrado = filtrar(df, grupos, empresas, anos)
 
