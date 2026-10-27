@@ -334,15 +334,16 @@ O dicionário completo, com os tipos de cada coluna, está no README do reposit�
 """)
 
     with st.expander("⚠️ Limitações dos dados"):
-        st.markdown("""
+        # r antes das aspas: o \$ impede que o markdown leia o R$ como fórmula
+        st.markdown(r"""
 - O lucro é o **consolidado** (inclui os minoritários). As notícias costumam usar o lucro dos controladores
-  (WEG 2023: R$ 5,87 bi consolidado contra R$ 5,73 bi dos controladores).
+  (WEG 2023: R\$ 5,87 bi consolidado contra R\$ 5,73 bi dos controladores).
 - O EBIT da CVM (conta 3.05) inclui a equivalência patrimonial (pesa na Vale, na Petrobras e na Engie).
 - A alavancagem usa o EBIT e não o EBITDA, porque a depreciação não vem nos três arquivos usados.
   Com o EBIT o número fica um pouco maior, ou seja, mais conservador.
 - A dívida líquida não conta derivativos nem arrendamentos. As empresas às vezes contam,
   então o número pode ser diferente do release.
-- A receita da Renner inclui cerca de R$ 2,0 bi de serviços financeiros, e o lucro da Vale em 2021 e 2022
+- A receita da Renner inclui cerca de R\$ 2,0 bi de serviços financeiros, e o lucro da Vale em 2021 e 2022
   inclui operações descontinuadas.
 - O Itaú (ITUB4) ficou de fora: banco usa outro plano de contas e os indicadores não se comparam.
 - São três anos e onze empresas: os números mostram o que aconteceu, não explicam por que aconteceu.
