@@ -93,16 +93,26 @@ df, origem, erro = carregar_dados()
 # FILTROS NA BARRA LATERAL (com session_state)
 # ==============================================================================
 GRUPOS = sorted(df["grupo"].unique().tolist())
-EMPRESAS = sorted(df["ticker"].unique().tolist())
 ANOS = sorted(df["ano"].unique().tolist())
+
+
+def empresas_dos_grupos(grupos):
+    """Tickers das empresas que pertencem aos grupos escolhidos."""
+    return sorted(df.loc[df["grupo"].isin(grupos), "ticker"].unique().tolist())
+
+
+def atualizar_empresas():
+    """Filtro cruzado: quando os grupos mudam, a lista de empresas passa a ter todas as desses grupos."""
+    st.session_state["filtro_empresas"] = empresas_dos_grupos(st.session_state["filtro_grupos"])
+
 
 # valor padrão só na primeira execução; depois o session_state guarda a escolha
 st.session_state.setdefault("filtro_grupos", GRUPOS)
-st.session_state.setdefault("filtro_empresas", EMPRESAS)
+st.session_state.setdefault("filtro_empresas", empresas_dos_grupos(GRUPOS))
 
 st.sidebar.header("Filtros")
-grupos = st.sidebar.multiselect("Grupo de setor", GRUPOS, key="filtro_grupos")
-empresas = st.sidebar.multiselect("Empresas", EMPRESAS, key="filtro_empresas")
+grupos = st.sidebar.multiselect("Grupo de setor", GRUPOS, key="filtro_grupos", on_change=atualizar_empresas)
+empresas = st.sidebar.multiselect("Empresas", empresas_dos_grupos(grupos), key="filtro_empresas")
 # o select_slider só funciona como intervalo quando o value é uma tupla (por isso não usa o setdefault)
 anos = st.sidebar.select_slider("Período", options=ANOS, value=(ANOS[0], ANOS[-1]), key="filtro_anos")
 
