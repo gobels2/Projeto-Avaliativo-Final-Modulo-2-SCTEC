@@ -375,10 +375,16 @@ with aba_crescimento:
         crescimento = crescimento.sort_values("variacao")
         maior = crescimento.iloc[-1]
         menor = crescimento.iloc[0]
-        palavra = "maior queda" if menor["variacao"] < 0 else "menor crescimento"
-        insight = (f"De {anos[0]} a {ultimo_ano}, o maior crescimento da receita foi da "
-                   f"{maior['ticker']} ({numero_br(maior['variacao'] * 100, 1, sinal=True)}%) e a {palavra} foi da "
-                   f"{menor['ticker']} ({numero_br(menor['variacao'] * 100, 1, sinal=True)}%).")
+        variacao_maior = numero_br(maior["variacao"] * 100, 1, sinal=True) + "%"
+        variacao_menor = numero_br(menor["variacao"] * 100, 1, sinal=True) + "%"
+        if maior["ticker"] == menor["ticker"]:
+            insight = f"De {anos[0]} a {ultimo_ano}, a receita da {maior['ticker']} variou {variacao_maior}."
+        else:
+            # o artigo e a palavra mudam quando até a primeira do ranking encolheu
+            topo = "o maior crescimento" if maior["variacao"] >= 0 else "a menor queda"
+            fundo = "a maior queda" if menor["variacao"] < 0 else "o menor crescimento"
+            insight = (f"De {anos[0]} a {ultimo_ano}, {topo} da receita foi da {maior['ticker']} ({variacao_maior}) "
+                       f"e {fundo} foi da {menor['ticker']} ({variacao_menor}).")
     else:
         insight = "Com um ano só não dá para medir crescimento: escolha pelo menos dois anos no filtro de período."
     total = df_filtrado.loc[df_filtrado["ano"] == ultimo_ano, "receita"].sum()
