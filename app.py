@@ -250,5 +250,40 @@ col4.metric("Liquidez corrente média", formatar_vezes(k_atual["liquidez"]),
             delta_num(k_atual["liquidez"], k_anterior.get("liquidez")), border=True,
             help="Média simples de ativo circulante / passivo circulante. Abaixo de 1,5x é alerta.")
 
-st.dataframe(df_filtrado, width="stretch")
-st.caption(f"{len(df_filtrado)} linhas carregadas")
+# ==============================================================================
+# ABAS
+# ==============================================================================
+aba_weg, aba_crescimento, aba_rentabilidade, aba_solvencia, aba_dados = st.tabs(
+    ["🏭 WEG em foco", "📈 Crescimento", "💰 Rentabilidade", "🛡️ Solvência", "📋 Dados"]
+)
+
+# --- Aba 1: a WEG aparece sempre, mesmo desmarcada; os filtros mudam só com quem ela é comparada
+with aba_weg:
+    weg = df[(df["ticker"] == "WEGE3") & df["ano"].between(anos[0], anos[1])]
+    w = weg[weg["ano"] == ultimo_ano].iloc[0]
+    weg_anterior = df[(df["ticker"] == "WEGE3") & (df["ano"] == ultimo_ano - 1)]
+    w_ant = weg_anterior.iloc[0] if not weg_anterior.empty else {}
+
+    st.subheader(f"WEG em {ultimo_ano}")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Receita da WEG", formatar_reais(w["receita"]),
+              delta_pct(w["receita"], w_ant.get("receita")), border=True)
+    c2.metric("Lucro líquido da WEG", formatar_reais(w["lucro_liquido"]),
+              delta_pct(w["lucro_liquido"], w_ant.get("lucro_liquido")), border=True)
+    c3.metric("Margem líquida da WEG", formatar_pct(w["margem_liquida"]),
+              delta_pp(w["margem_liquida"], w_ant.get("margem_liquida")), border=True)
+    c4.metric("ROE da WEG", formatar_pct(w["roe"]),
+              delta_pp(w["roe"], w_ant.get("roe")), border=True)
+
+with aba_crescimento:
+    st.caption("Gráficos de crescimento da receita: próxima etapa.")
+
+with aba_rentabilidade:
+    st.caption("Gráficos de margens e ROE: próxima etapa.")
+
+with aba_solvencia:
+    st.caption("Gráficos de liquidez e dívida: próxima etapa.")
+
+with aba_dados:
+    st.dataframe(df_filtrado, width="stretch")
+    st.caption(f"{len(df_filtrado)} linhas carregadas")
