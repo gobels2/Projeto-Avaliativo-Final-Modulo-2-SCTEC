@@ -45,13 +45,15 @@ ORDER BY e.ticker, t.ano
 # ==============================================================================
 # CONEXÃO COM O SUPABASE E PLANO B NO CSV
 # ==============================================================================
+@st.cache_resource  # abre a conexão uma vez só e reaproveita
 def obter_conexao():
     """Conexão com o Supabase; os dados ficam no .streamlit/secrets.toml (fora do git)."""
     return st.connection("postgresql", type="sql")
 
 
+@st.cache_data(ttl=600, show_spinner="Consultando o Supabase...")  # guarda o resultado por 10 minutos
 def consultar_supabase():
-    """Busca os dados no banco; levanta erro se der problema ou se vier vazio."""
+    """Busca os dados no banco; se der erro, o Streamlit não guarda o erro no cache."""
     df = obter_conexao().query(CONSULTA_SQL, ttl=600)
     if df is None or df.empty:
         raise ValueError("A consulta ao Supabase voltou vazia.")
@@ -61,6 +63,7 @@ def consultar_supabase():
     return df
 
 
+@st.cache_data  # os CSVs não mudam enquanto o app roda
 def ler_csv_local():
     """Plano B: junta os 3 CSVs da camada Gold no mesmo formato da consulta."""
     empresas = pd.read_csv(PASTA_GOLD / "dim_empresa.csv")
