@@ -144,12 +144,14 @@ def ler_csv_local():
     return df[COLUNAS].sort_values(["ticker", "ano"]).reset_index(drop=True)
 
 
+# guarda também a decisão por 10 minutos: com o banco fora do ar, o app não tenta de novo a cada clique
+@st.cache_data(ttl=600, show_spinner=False)
 def carregar_dados():
-    """Tenta o Supabase; se falhar, usa o CSV local e devolve o erro para mostrar na barra lateral."""
+    """Tenta o Supabase; se falhar, usa o CSV local e devolve o erro (em texto) para mostrar na barra lateral."""
     try:
         return consultar_supabase(), "Supabase (PostgreSQL)", None
     except Exception as erro:
-        return ler_csv_local(), "CSV local (data/gold)", erro
+        return ler_csv_local(), "CSV local (data/gold)", f"{type(erro).__name__}: {erro}"
 
 
 def filtrar(df, grupos, empresas, anos):
@@ -175,6 +177,19 @@ def ajustar_layout(fig):
     fig.update_layout(template="plotly_white", separators=",.", legend_title_text="",
                       margin=dict(t=60, l=10, r=10, b=10))
     return fig
+
+
+def motivo_alerta(linha):
+    """Explica por que a empresa entrou em alerta na pergunta 4."""
+    motivos = []
+    if linha["alerta_liquidez"]:
+        motivos.append("liquidez abaixo de 1,5x")
+    if linha["alerta_divida"]:
+        if linha["ebit"] <= 0:
+            motivos.append("EBIT negativo com dívida")
+        else:
+            motivos.append("dívida acima de 3x o EBIT")
+    return "; ".join(motivos)
 
 
 def kpis_do_ano(dados):
@@ -233,8 +248,8 @@ if erro is None:
 else:
     st.sidebar.markdown(f"🟡 Dados do {origem}")
     with st.sidebar.expander("Por que o CSV?"):
-        st.caption(f"Não foi possível consultar o Supabase: {type(erro).__name__}")
-        st.caption(str(erro)[:300])
+        st.caption("Não foi possível consultar o Supabase. O app tenta de novo em 10 minutos.")
+        st.caption(erro[:300])
 st.sidebar.caption("Fonte: CVM - Dados Abertos (DFP 2021–2023)")
 
 # ==============================================================================
@@ -360,10 +375,16 @@ with aba_crescimento:
         crescimento = crescimento.sort_values("variacao")
         maior = crescimento.iloc[-1]
         menor = crescimento.iloc[0]
-        palavra = "maior queda" if menor["variacao"] < 0 else "menor crescimento"
-        insight = (f"De {anos[0]} a {ultimo_ano}, o maior crescimento da receita foi da "
-                   f"{maior['ticker']} ({numero_br(maior['variacao'] * 100, 1, sinal=True)}%) e a {palavra} foi da "
-                   f"{menor['ticker']} ({numero_br(menor['variacao'] * 100, 1, sinal=True)}%).")
+        variacao_maior = numero_br(maior["variacao"] * 100, 1, sinal=True) + "%"
+        variacao_menor = numero_br(menor["variacao"] * 100, 1, sinal=True) + "%"
+        if maior["ticker"] == menor["ticker"]:
+            insight = f"De {anos[0]} a {ultimo_ano}, a receita da {maior['ticker']} variou {variacao_maior}."
+        else:
+            # o artigo e a palavra mudam quando até a primeira do ranking encolheu
+            topo = "o maior crescimento" if maior["variacao"] >= 0 else "a menor queda"
+            fundo = "a maior queda" if menor["variacao"] < 0 else "o menor crescimento"
+            insight = (f"De {anos[0]} a {ultimo_ano}, {topo} da receita foi da {maior['ticker']} ({variacao_maior}) "
+                       f"e {fundo} foi da {menor['ticker']} ({variacao_menor}).")
     else:
         insight = "Com um ano só não dá para medir crescimento: escolha pelo menos dois anos no filtro de período."
     total = df_filtrado.loc[df_filtrado["ano"] == ultimo_ano, "receita"].sum()
@@ -421,10 +442,132 @@ with aba_crescimento:
         st.plotly_chart(ajustar_layout(fig), width="stretch")
 
 with aba_rentabilidade:
-    st.caption("Gráficos de margens e ROE: próxima etapa.")
+    st.subheader(f"Margem e retorno em {ultimo_ano}")
+
+    ranking = atual.sort_values("roe", ascending=False).reset_index(drop=True)
+    primeira = ranking.iloc[0]
+    mediana_roe = ranking["roe"].median()
+    mediana_margem = ranking["margem_liquida"].median()
+    insight = (f"Em {ultimo_ano}, o maior ROE foi da {primeira['ticker']} ({formatar_pct(primeira['roe'])}); "
+               f"a mediana das {len(ranking)} empresas selecionadas foi {formatar_pct(mediana_roe)}.")
+    if "WEGE3" in set(ranking["ticker"]):
+        posicao = ranking.index[ranking["ticker"] == "WEGE3"][0] + 1
+        roe_weg = ranking.loc[ranking["ticker"] == "WEGE3", "roe"].iloc[0]
+        insight += f" A WEG ficou em {posicao}º lugar, com ROE de {formatar_pct(roe_weg)}."
+    contexto = ("O ROE mostra quanto lucro a empresa gerou para cada real dos sócios; a margem líquida, "
+                "quanto de cada real vendido virou lucro.")
+    acao = ("Para o investidor: comparar cada empresa com a mediana (linhas tracejadas), e não com a média, "
+            "que é puxada pelos casos extremos. Quem fica acima e à direita das duas linhas junta margem e retorno altos.")
+    texto_piramide(contexto, insight, acao)
+
+    graf1, graf2 = st.columns(2)
+
+    # gráfico 6: quadrantes margem líquida x ROE, bolha do tamanho da receita
+    with graf1:
+        pontos = atual.assign(margem_pct=atual["margem_liquida"] * 100, roe_pct=atual["roe"] * 100,
+                              rotulo=atual["receita"].apply(formatar_reais))
+        pontos["destaque"] = "Outras"
+        pontos.loc[pontos["ticker"] == "WEGE3", "destaque"] = "WEG"
+        fig = px.scatter(pontos, x="margem_pct", y="roe_pct", size="receita", text="ticker", color="destaque",
+                         color_discrete_map={"WEG": COR_WEG, "Outras": COR_OUTRAS}, size_max=45,
+                         custom_data=["nome", "rotulo"],
+                         title=f"Margem líquida x ROE em {ultimo_ano} (bolha = receita)",
+                         labels={"margem_pct": "Margem líquida (%)", "roe_pct": "ROE (%)", "destaque": ""})
+        fig.update_traces(textposition="top center",
+                          hovertemplate="<b>%{customdata[0]}</b><br>Margem líquida: %{x:.1f}%<br>"
+                                        "ROE: %{y:.1f}%<br>Receita: %{customdata[1]}<extra></extra>")
+        fig.add_vline(x=mediana_margem * 100, line_dash="dash", line_color=COR_OUTRAS,
+                      annotation_text="mediana da margem", annotation_position="bottom right")
+        fig.add_hline(y=mediana_roe * 100, line_dash="dash", line_color=COR_OUTRAS,
+                      annotation_text="mediana do ROE", annotation_position="right")
+        # folga em cima e embaixo para o nome da bolha mais alta não ser cortado
+        fig.update_yaxes(range=[pontos["roe_pct"].min() - 8, pontos["roe_pct"].max() + 8])
+        st.plotly_chart(ajustar_layout(fig), width="stretch")
+
+    # gráfico 7: margem EBIT por grupo em todos os anos do filtro (pontos da WEG em azul)
+    with graf2:
+        caixas = df_filtrado.assign(margem_ebit_pct=df_filtrado["margem_ebit"] * 100)
+        fig = px.box(caixas, x="grupo", y="margem_ebit_pct", points="all", hover_data=["ticker", "ano"],
+                     category_orders={"grupo": GRUPOS}, color_discrete_sequence=[COR_OUTRAS],
+                     title=f"Margem EBIT por grupo ({anos[0]} a {ultimo_ano})",
+                     labels={"grupo": "Grupo", "margem_ebit_pct": "Margem EBIT (%)"})
+        fig.update_traces(name="Todas as empresas", showlegend=True)
+        weg_caixas = caixas[caixas["ticker"] == "WEGE3"]
+        if not weg_caixas.empty:
+            fig.add_scatter(x=weg_caixas["grupo"], y=weg_caixas["margem_ebit_pct"], mode="markers", name="WEG",
+                            marker=dict(color=COR_WEG, size=10, line=dict(color="white", width=2)),
+                            customdata=weg_caixas["ano"],
+                            hovertemplate="<b>WEG</b> %{customdata}: %{y:.1f}%<extra></extra>")
+        st.plotly_chart(ajustar_layout(fig), width="stretch")
 
 with aba_solvencia:
-    st.caption("Gráficos de liquidez e dívida: próxima etapa.")
+    st.subheader(f"Liquidez e dívida em {ultimo_ano}")
+
+    em_alerta = atual[atual["alerta_liquidez"] | atual["alerta_divida"]].sort_values("ticker")
+    liquidez_baixa = atual.loc[atual["alerta_liquidez"], "ticker"].tolist()
+    divida_alta = atual.loc[atual["alerta_divida"], "ticker"].tolist()
+    contexto = ("Liquidez corrente: quanto a empresa tem no curto prazo para cada real que deve no curto prazo. "
+                "Alavancagem: quantos anos de EBIT pagariam a dívida líquida.")
+    insight = (f"Em {ultimo_ano}, {len(liquidez_baixa)} empresa(s) ficaram abaixo de 1,5x de liquidez "
+               f"({', '.join(liquidez_baixa) or 'nenhuma'}) e {len(divida_alta)} passaram de 3x de alavancagem "
+               f"ou tinham EBIT negativo com dívida ({', '.join(divida_alta) or 'nenhuma'}).")
+    acao = ("Para o gestor financeiro e o investidor: olhar os dois alertas juntos antes de investir ou conceder "
+            "crédito. Liquidez baixa com caixa maior que a dívida (dívida líquida negativa) pesa menos que liquidez "
+            "baixa com dívida alta.")
+    texto_piramide(contexto, insight, acao)
+
+    solv = atual.copy()
+    solv["situacao"] = "Sem alerta"
+    SITUACOES = ["WEG", "Sem alerta", "Em alerta"]  # mesma ordem de legenda nos dois gráficos
+    graf1, graf2 = st.columns(2)
+
+    # gráfico 8: liquidez corrente com a linha de corte em 1,5x
+    with graf1:
+        liq = solv.sort_values("liquidez_corrente", ascending=False)
+        liq.loc[liq["alerta_liquidez"], "situacao"] = "Em alerta"
+        liq.loc[liq["ticker"] == "WEGE3", "situacao"] = "WEG"
+        liq["rotulo"] = liq["liquidez_corrente"].apply(formatar_vezes)
+        fig = px.bar(liq, x="ticker", y="liquidez_corrente", color="situacao", text="rotulo",
+                     color_discrete_map={"WEG": COR_WEG, "Sem alerta": COR_OUTRAS, "Em alerta": COR_ALERTA},
+                     category_orders={"ticker": liq["ticker"].tolist(), "situacao": SITUACOES},
+                     title=f"Liquidez corrente em {ultimo_ano}",
+                     labels={"ticker": "Empresa", "liquidez_corrente": "Liquidez corrente (x)", "situacao": ""})
+        fig.update_traces(textposition="outside", cliponaxis=False,
+                          hovertemplate="<b>%{x}</b>: %{text}<extra></extra>")
+        fig.add_hline(y=1.5, line_dash="dash", line_color=COR_ALERTA,
+                      annotation_text="1,5x", annotation_position="top right")
+        st.plotly_chart(ajustar_layout(fig), width="stretch")
+
+    # gráfico 9: dívida líquida em R$ bi (negativa = caixa líquido), com a alavancagem escrita na barra
+    with graf2:
+        div = solv.sort_values("divida_liquida", ascending=False)
+        div.loc[div["alerta_divida"], "situacao"] = "Em alerta"
+        div.loc[div["ticker"] == "WEGE3", "situacao"] = "WEG"
+        div["divida_bi"] = div["divida_liquida"] / 1e9
+        div["rotulo"] = div["alavancagem"].apply(formatar_vezes)
+        div["valor"] = div["divida_liquida"].apply(formatar_reais)
+        fig = px.bar(div, x="ticker", y="divida_bi", color="situacao", text="rotulo", custom_data=["valor"],
+                     color_discrete_map={"WEG": COR_WEG, "Sem alerta": COR_OUTRAS, "Em alerta": COR_ALERTA},
+                     category_orders={"ticker": div["ticker"].tolist(), "situacao": SITUACOES},
+                     title=f"Dívida líquida em {ultimo_ano} (texto = dívida líquida / EBIT)",
+                     labels={"ticker": "Empresa", "divida_bi": "Dívida líquida (R$ bilhões)", "situacao": ""})
+        fig.update_traces(textposition="outside", cliponaxis=False,
+                          hovertemplate="<b>%{x}</b><br>Dívida líquida: %{customdata[0]}<br>"
+                                        "Alavancagem: %{text}<extra></extra>")
+        st.plotly_chart(ajustar_layout(fig), width="stretch")
+
+    # tabela das empresas em alerta (pergunta 4)
+    st.markdown(f"**Empresas em alerta em {ultimo_ano}**")
+    if em_alerta.empty:
+        st.success("Nenhuma empresa em alerta no período.")
+    else:
+        tabela_alerta = pd.DataFrame({
+            "ticker": em_alerta["ticker"],
+            "liquidez_corrente": em_alerta["liquidez_corrente"].apply(formatar_vezes),
+            "alavancagem": em_alerta["alavancagem"].apply(formatar_vezes),
+            "motivo": em_alerta.apply(motivo_alerta, axis=1),
+        })
+        st.dataframe(tabela_alerta, width="stretch", hide_index=True)
 
 with aba_dados:
     st.subheader("Dados filtrados")
