@@ -11,6 +11,7 @@ Como rodar (a partir da pasta do projeto):
 from pathlib import Path
 
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 
 # configuração da página
@@ -21,6 +22,12 @@ st.set_page_config(
 )
 
 PASTA_GOLD = Path(__file__).resolve().parent / "data" / "gold"
+
+# cores do painel: a WEG em azul, as outras em cinza e o vermelho só para alerta
+COR_WEG = "#00579D"
+COR_OUTRAS = "#8794A6"
+COR_ALERTA = "#C0392B"
+CORES_ANOS = ["#8DB9E4", "#4A87C9", "#00579D"]  # do ano mais antigo (claro) ao mais recente (escuro)
 
 # medidas da tabela fato (valores em R$ e indicadores)
 COLUNAS_NUMERICAS = ["receita", "lucro_bruto", "ebit", "lucro_liquido", "ativo_circulante", "passivo_circulante",
@@ -151,6 +158,25 @@ def filtrar(df, grupos, empresas, anos):
     return df[filtro]
 
 
+def cores_empresas(tickers):
+    """WEG em azul e as demais em cinza (a cor segue a empresa, não a posição no gráfico)."""
+    return {ticker: COR_WEG if ticker == "WEGE3" else COR_OUTRAS for ticker in tickers}
+
+
+def texto_piramide(contexto, insight, acao):
+    """Texto curto que abre cada aba, na ordem da pirâmide invertida: contexto, insight e ação."""
+    texto = f"**Contexto:** {contexto}\n\n**Insight:** {insight}\n\n**Ação:** {acao}"
+    # \$ para o markdown não ler o R$ como fórmula
+    st.info(texto.replace("$", "\\$"))
+
+
+def ajustar_layout(fig):
+    """Padrão de todos os gráficos: fundo branco, números em português e legenda sem título."""
+    fig.update_layout(template="plotly_white", separators=",.", legend_title_text="",
+                      margin=dict(t=60, l=10, r=10, b=10))
+    return fig
+
+
 def kpis_do_ano(dados):
     """Os 4 números da carteira num ano: soma da receita e do lucro, média simples do ROE e da liquidez."""
     if dados.empty:
@@ -265,6 +291,22 @@ with aba_weg:
     w_ant = weg_anterior.iloc[0] if not weg_anterior.empty else {}
 
     st.subheader(f"WEG em {ultimo_ano}")
+    w_ini = weg[weg["ano"] == anos[0]].iloc[0]
+    fatia = w["receita"] / df.loc[df["ano"] == ultimo_ano, "receita"].sum()
+    contexto = (f"Em {ultimo_ano}, a WEG teve receita de {formatar_reais(w['receita'])}, "
+                f"{formatar_pct(fatia)} da receita somada das 11 empresas do painel.")
+    if anos[0] < ultimo_ano:
+        insight = (f"De {anos[0]} a {ultimo_ano}, a receita da WEG variou {delta_pct(w['receita'], w_ini['receita'])} "
+                   f"e o lucro líquido {delta_pct(w['lucro_liquido'], w_ini['lucro_liquido'])}; a margem líquida "
+                   f"foi de {formatar_pct(w_ini['margem_liquida'])} para {formatar_pct(w['margem_liquida'])}.")
+    else:
+        insight = (f"Em {ultimo_ano}, a margem líquida da WEG foi de {formatar_pct(w['margem_liquida'])} "
+                   f"e o ROE de {formatar_pct(w['roe'])}.")
+    acao = ("Para o investidor de longo prazo: acompanhar, a cada novo balanço, se a margem líquida se mantém "
+            f"e se o caixa continua maior que a dívida (dívida líquida de {formatar_reais(w['divida_liquida'])} "
+            f"em {ultimo_ano}; negativa quer dizer mais caixa que dívida).")
+    texto_piramide(contexto, insight, acao)
+
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Receita da WEG", formatar_reais(w["receita"]),
               delta_pct(w["receita"], w_ant.get("receita")), border=True)
@@ -275,8 +317,108 @@ with aba_weg:
     c4.metric("ROE da WEG", formatar_pct(w["roe"]),
               delta_pp(w["roe"], w_ant.get("roe")), border=True)
 
+    graf1, graf2 = st.columns(2)
+
+    # gráfico 1: receita e lucro da WEG por ano (mesma unidade, um eixo só)
+    barras = weg.melt(id_vars="ano", value_vars=["receita", "lucro_liquido"], var_name="indicador", value_name="valor")
+    barras["indicador"] = barras["indicador"].map({"receita": "Receita líquida", "lucro_liquido": "Lucro líquido"})
+    barras["valor_bi"] = barras["valor"] / 1e9
+    barras["rotulo"] = barras["valor"].apply(formatar_reais)
+    barras["ano"] = barras["ano"].astype(str)
+    fig = px.bar(barras, x="ano", y="valor_bi", color="indicador", barmode="group", text="rotulo",
+                 color_discrete_map={"Receita líquida": COR_WEG, "Lucro líquido": "#4A87C9"},
+                 title="Receita e lucro líquido da WEG por ano",
+                 labels={"ano": "Ano", "valor_bi": "R$ bilhões", "indicador": ""})
+    fig.update_traces(textposition="outside", cliponaxis=False,
+                      hovertemplate="<b>%{fullData.name}</b><br>%{x}: %{text}<extra></extra>")
+    graf1.plotly_chart(ajustar_layout(fig), width="stretch")
+
+    # gráfico 2: margem líquida da WEG contra a média das outras empresas selecionadas
+    linhas = weg[["ano", "margem_liquida"]].assign(serie="WEG")
+    outras = df_filtrado[df_filtrado["ticker"] != "WEGE3"]
+    if not outras.empty:
+        media = outras.groupby("ano", as_index=False)["margem_liquida"].mean()
+        linhas = pd.concat([linhas, media.assign(serie="Média das outras selecionadas")])
+    linhas["margem_pct"] = linhas["margem_liquida"] * 100
+    linhas["ano"] = linhas["ano"].astype(str)
+    fig = px.line(linhas, x="ano", y="margem_pct", color="serie", markers=True,
+                  color_discrete_map={"WEG": COR_WEG, "Média das outras selecionadas": COR_OUTRAS},
+                  title="Margem líquida: WEG contra a média das outras",
+                  labels={"ano": "Ano", "margem_pct": "Margem líquida (%)", "serie": ""})
+    fig.update_traces(line_width=2, marker_size=9,
+                      hovertemplate="<b>%{fullData.name}</b><br>%{x}: %{y:.1f}%<extra></extra>")
+    graf2.plotly_chart(ajustar_layout(fig), width="stretch")
+
 with aba_crescimento:
-    st.caption("Gráficos de crescimento da receita: próxima etapa.")
+    st.subheader("Quem cresceu e quem encolheu")
+
+    # crescimento da receita do primeiro ao último ano do filtro, por empresa
+    receita_ano = df_filtrado.pivot_table(index="ticker", columns="ano", values="receita")
+    crescimento = pd.DataFrame()
+    if anos[0] < ultimo_ano:
+        crescimento = (receita_ano[ultimo_ano] / receita_ano[anos[0]] - 1).rename("variacao").reset_index()
+        crescimento = crescimento.sort_values("variacao")
+        maior = crescimento.iloc[-1]
+        menor = crescimento.iloc[0]
+        palavra = "maior queda" if menor["variacao"] < 0 else "menor crescimento"
+        insight = (f"De {anos[0]} a {ultimo_ano}, o maior crescimento da receita foi da "
+                   f"{maior['ticker']} ({numero_br(maior['variacao'] * 100, 1, sinal=True)}%) e a {palavra} foi da "
+                   f"{menor['ticker']} ({numero_br(menor['variacao'] * 100, 1, sinal=True)}%).")
+    else:
+        insight = "Com um ano só não dá para medir crescimento: escolha pelo menos dois anos no filtro de período."
+    total = df_filtrado.loc[df_filtrado["ano"] == ultimo_ano, "receita"].sum()
+    contexto = (f"Receita líquida das {df_filtrado['ticker'].nunique()} empresas selecionadas: "
+                f"{formatar_reais(total)} em {ultimo_ano}.")
+    acao = ("Antes de concluir, olhar o crescimento junto com a margem (aba Rentabilidade): crescer a receita "
+            "com margem menor não é o mesmo que crescer com lucro.")
+    texto_piramide(contexto, insight, acao)
+
+    # gráfico 3: receita por empresa e ano, com a WEG primeiro no eixo
+    ordem = ["WEGE3"] + sorted(t for t in df_filtrado["ticker"].unique() if t != "WEGE3")
+    barras = df_filtrado.assign(receita_bi=df_filtrado["receita"] / 1e9, ano_texto=df_filtrado["ano"].astype(str))
+    barras["rotulo"] = barras["receita"].apply(formatar_reais)
+    anos_texto = [str(a) for a in ANOS]
+    fig = px.bar(barras, x="ticker", y="receita_bi", color="ano_texto", barmode="group",
+                 category_orders={"ticker": [t for t in ordem if t in set(barras["ticker"])], "ano_texto": anos_texto},
+                 color_discrete_map=dict(zip(anos_texto, CORES_ANOS)), custom_data=["nome", "rotulo"],
+                 title="Receita líquida por empresa e ano",
+                 labels={"ticker": "Empresa", "receita_bi": "R$ bilhões", "ano_texto": "Ano"})
+    fig.update_traces(hovertemplate="<b>%{customdata[0]}</b><br>%{fullData.name}: %{customdata[1]}<extra></extra>")
+    st.plotly_chart(ajustar_layout(fig), width="stretch")
+
+    graf1, graf2 = st.columns(2)
+
+    # gráfico 4: ranking do crescimento (WEG em azul, queda em vermelho)
+    with graf1:
+        if crescimento.empty:
+            st.info("Escolha pelo menos dois anos para ver o crescimento.")
+        else:
+            crescimento["variacao_pct"] = crescimento["variacao"] * 100
+            crescimento["rotulo"] = crescimento["variacao_pct"].apply(lambda v: numero_br(v, 1, sinal=True) + "%")
+            crescimento["situacao"] = "Cresceu"
+            crescimento.loc[crescimento["variacao"] < 0, "situacao"] = "Encolheu"
+            crescimento.loc[crescimento["ticker"] == "WEGE3", "situacao"] = "WEG"
+            fig = px.bar(crescimento, x="variacao_pct", y="ticker", orientation="h", color="situacao", text="rotulo",
+                         color_discrete_map={"WEG": COR_WEG, "Cresceu": COR_OUTRAS, "Encolheu": COR_ALERTA},
+                         category_orders={"ticker": crescimento["ticker"].tolist()},
+                         title=f"Crescimento da receita de {anos[0]} a {ultimo_ano}",
+                         labels={"variacao_pct": "Variação da receita (%)", "ticker": "Empresa", "situacao": ""})
+            fig.update_traces(textposition="outside", cliponaxis=False,
+                              hovertemplate="<b>%{y}</b>: %{text}<extra></extra>")
+            st.plotly_chart(ajustar_layout(fig), width="stretch")
+
+    # gráfico 5: de onde vem a receita do último ano (grupo > setor > empresa)
+    with graf2:
+        mapa = df_filtrado[df_filtrado["ano"] == ultimo_ano].copy()
+        mapa["receita_bi"] = mapa["receita"] / 1e9
+        mapa["destaque"] = "Outras"
+        mapa.loc[mapa["ticker"] == "WEGE3", "destaque"] = "WEG"
+        fig = px.treemap(mapa, path=["grupo", "setor", "ticker"], values="receita_bi", color="destaque",
+                         color_discrete_map={"WEG": COR_WEG, "Outras": COR_OUTRAS, "(?)": "#C9D1DC"},
+                         title=f"Receita de {ultimo_ano} por grupo, setor e empresa")
+        fig.update_traces(texttemplate="%{label}<br>R$ %{value:,.1f} bi<br>%{percentRoot:.1%}",
+                          hovertemplate="<b>%{label}</b><br>R$ %{value:,.1f} bi (%{percentRoot:.1%} do total)<extra></extra>")
+        st.plotly_chart(ajustar_layout(fig), width="stretch")
 
 with aba_rentabilidade:
     st.caption("Gráficos de margens e ROE: próxima etapa.")
