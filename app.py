@@ -43,6 +43,70 @@ ORDER BY e.ticker, t.ano
 
 
 # ==============================================================================
+# FORMATAÇÃO NO PADRÃO BRASILEIRO (R$ 32,5 bi, 32,9%, 1,92x)
+# ==============================================================================
+def numero_br(valor, casas, sinal=False):
+    """Número com vírgula decimal e ponto de milhar; com sinal=True mostra o + na frente."""
+    texto = f"{valor:+,.{casas}f}" if sinal else f"{valor:,.{casas}f}"
+    return texto.replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def formatar_reais(valor):
+    """Valor em reais resumido: R$ 1,37 tri, R$ 32,5 bi, R$ 815,2 mi (negativo com - na frente)."""
+    sinal = "-" if valor < 0 else ""
+    valor = abs(valor)
+    if valor >= 1e12:
+        texto = numero_br(valor / 1e12, 2) + " tri"
+    elif valor >= 1e9:
+        texto = numero_br(valor / 1e9, 1) + " bi"
+    elif valor >= 1e6:
+        texto = numero_br(valor / 1e6, 1) + " mi"
+    else:
+        texto = numero_br(valor, 0)
+    return f"{sinal}R$ {texto}"
+
+
+def formatar_pct(valor):
+    """Fração em porcentagem com 1 casa: 0.329 vira 32,9%."""
+    if pd.isna(valor):
+        return "n/d"
+    return numero_br(valor * 100, 1) + "%"
+
+
+def formatar_vezes(valor):
+    """Indicador em vezes com 2 casas: 1,92x; vazio (EBIT negativo) vira n/d."""
+    if pd.isna(valor):
+        return "n/d"
+    return numero_br(valor, 2) + "x"
+
+
+def sem_comparacao(atual, anterior):
+    """Não dá para calcular a variação sem o ano anterior."""
+    return anterior is None or pd.isna(anterior) or pd.isna(atual)
+
+
+def delta_pct(atual, anterior):
+    """Variação em % contra o ano anterior; divide pelo valor absoluto para sair do prejuízo dar positivo."""
+    if sem_comparacao(atual, anterior) or anterior == 0:
+        return None
+    return numero_br((atual - anterior) / abs(anterior) * 100, 1, sinal=True) + "%"
+
+
+def delta_pp(atual, anterior):
+    """Variação em pontos percentuais (para margens e ROE)."""
+    if sem_comparacao(atual, anterior):
+        return None
+    return numero_br((atual - anterior) * 100, 1, sinal=True) + " p.p."
+
+
+def delta_num(atual, anterior):
+    """Variação simples com 2 casas (para a liquidez corrente)."""
+    if sem_comparacao(atual, anterior):
+        return None
+    return numero_br(atual - anterior, 2, sinal=True)
+
+
+# ==============================================================================
 # CONEXÃO COM O SUPABASE E PLANO B NO CSV
 # ==============================================================================
 @st.cache_resource  # abre a conexão uma vez só e reaproveita
@@ -85,6 +149,18 @@ def filtrar(df, grupos, empresas, anos):
     """Aplica os filtros da barra lateral: grupos, empresas e intervalo de anos."""
     filtro = df["grupo"].isin(grupos) & df["ticker"].isin(empresas) & df["ano"].between(anos[0], anos[1])
     return df[filtro]
+
+
+def kpis_do_ano(dados):
+    """Os 4 números da carteira num ano: soma da receita e do lucro, média simples do ROE e da liquidez."""
+    if dados.empty:
+        return {}
+    return {
+        "receita": dados["receita"].sum(),
+        "lucro": dados["lucro_liquido"].sum(),
+        "roe": dados["roe"].mean(),
+        "liquidez": dados["liquidez_corrente"].mean(),
+    }
 
 
 df, origem, erro = carregar_dados()
@@ -135,6 +211,12 @@ else:
         st.caption(str(erro)[:300])
 st.sidebar.caption("Fonte: CVM - Dados Abertos (DFP 2021–2023)")
 
+# ==============================================================================
+# TOPO: TÍTULO E KPIs DA CARTEIRA FILTRADA
+# ==============================================================================
+st.title("🏭 WEG em números (2021–2023)")
+st.caption("A empresa que mais gerou bilionários no Brasil (Forbes), comparada a 10 gigantes da bolsa")
+
 # sem grupo ou sem empresa não há o que mostrar: avisa e para aqui
 if not grupos or not empresas:
     st.warning("Selecione pelo menos um grupo e uma empresa na barra lateral.")
@@ -142,5 +224,127 @@ if not grupos or not empresas:
 
 df_filtrado = filtrar(df, grupos, empresas, anos)
 
-st.dataframe(df_filtrado, width="stretch")
-st.caption(f"{len(df_filtrado)} linhas carregadas")
+# KPIs no último ano do filtro; o delta compara com o ano anterior (base completa, mesmas empresas)
+ultimo_ano = anos[1]
+atual = df_filtrado[df_filtrado["ano"] == ultimo_ano]
+anterior = df[(df["ano"] == ultimo_ano - 1) & df["ticker"].isin(atual["ticker"])]
+k_atual = kpis_do_ano(atual)
+k_anterior = kpis_do_ano(anterior)
+
+if k_anterior:
+    st.markdown(f"**Carteira filtrada: {len(atual)} empresas em {ultimo_ano}**, com a variação contra {ultimo_ano - 1}")
+else:
+    st.markdown(f"**Carteira filtrada: {len(atual)} empresas em {ultimo_ano}** (sem ano anterior na base para comparar)")
+
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Receita líquida total", formatar_reais(k_atual["receita"]),
+            delta_pct(k_atual["receita"], k_anterior.get("receita")), border=True,
+            help="Soma da receita líquida (conta 3.01) das empresas filtradas.")
+col2.metric("Lucro líquido total", formatar_reais(k_atual["lucro"]),
+            delta_pct(k_atual["lucro"], k_anterior.get("lucro")), border=True,
+            help="Soma do lucro líquido consolidado (conta 3.11) das empresas filtradas.")
+col3.metric("ROE médio", formatar_pct(k_atual["roe"]),
+            delta_pp(k_atual["roe"], k_anterior.get("roe")), border=True,
+            help="Média simples do ROE (lucro líquido / patrimônio líquido) entre as empresas.")
+col4.metric("Liquidez corrente média", formatar_vezes(k_atual["liquidez"]),
+            delta_num(k_atual["liquidez"], k_anterior.get("liquidez")), border=True,
+            help="Média simples de ativo circulante / passivo circulante. Abaixo de 1,5x é alerta.")
+
+# ==============================================================================
+# ABAS
+# ==============================================================================
+aba_weg, aba_crescimento, aba_rentabilidade, aba_solvencia, aba_dados = st.tabs(
+    ["🏭 WEG em foco", "📈 Crescimento", "💰 Rentabilidade", "🛡️ Solvência", "📋 Dados"]
+)
+
+# --- Aba 1: a WEG aparece sempre, mesmo desmarcada; os filtros mudam só com quem ela é comparada
+with aba_weg:
+    weg = df[(df["ticker"] == "WEGE3") & df["ano"].between(anos[0], anos[1])]
+    w = weg[weg["ano"] == ultimo_ano].iloc[0]
+    weg_anterior = df[(df["ticker"] == "WEGE3") & (df["ano"] == ultimo_ano - 1)]
+    w_ant = weg_anterior.iloc[0] if not weg_anterior.empty else {}
+
+    st.subheader(f"WEG em {ultimo_ano}")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Receita da WEG", formatar_reais(w["receita"]),
+              delta_pct(w["receita"], w_ant.get("receita")), border=True)
+    c2.metric("Lucro líquido da WEG", formatar_reais(w["lucro_liquido"]),
+              delta_pct(w["lucro_liquido"], w_ant.get("lucro_liquido")), border=True)
+    c3.metric("Margem líquida da WEG", formatar_pct(w["margem_liquida"]),
+              delta_pp(w["margem_liquida"], w_ant.get("margem_liquida")), border=True)
+    c4.metric("ROE da WEG", formatar_pct(w["roe"]),
+              delta_pp(w["roe"], w_ant.get("roe")), border=True)
+
+with aba_crescimento:
+    st.caption("Gráficos de crescimento da receita: próxima etapa.")
+
+with aba_rentabilidade:
+    st.caption("Gráficos de margens e ROE: próxima etapa.")
+
+with aba_solvencia:
+    st.caption("Gráficos de liquidez e dívida: próxima etapa.")
+
+with aba_dados:
+    st.subheader("Dados filtrados")
+
+    # na tela: reais em bilhões e margens/ROE em %; o download leva os números completos
+    colunas_reais = COLUNAS_NUMERICAS[:12]
+    colunas_pct = ["margem_bruta", "margem_ebit", "margem_liquida", "roe"]
+    tabela = df_filtrado.copy()
+    tabela[colunas_reais] = (tabela[colunas_reais] / 1e9).round(2)
+    tabela[colunas_pct] = (tabela[colunas_pct] * 100).round(1)
+    tabela[["liquidez_corrente", "alavancagem"]] = tabela[["liquidez_corrente", "alavancagem"]].round(2)
+
+    configuracao = {"ano": st.column_config.NumberColumn("ano", format="%d")}
+    for coluna in colunas_reais:
+        configuracao[coluna] = st.column_config.NumberColumn(f"{coluna} (R$ bi)", format="localized")
+    for coluna in colunas_pct:
+        configuracao[coluna] = st.column_config.NumberColumn(f"{coluna} (%)", format="localized")
+    for coluna in ["liquidez_corrente", "alavancagem"]:
+        configuracao[coluna] = st.column_config.NumberColumn(f"{coluna} (x)", format="localized")
+
+    st.dataframe(tabela, width="stretch", hide_index=True, column_config=configuracao)
+    st.caption(f"{len(tabela)} linhas, uma por empresa e ano. Alavancagem vazia = EBIT zero ou negativo.")
+
+    # CSV com ; e vírgula decimal, para abrir direto no Excel em português
+    csv = df_filtrado.to_csv(index=False, sep=";", decimal=",").encode("utf-8-sig")
+    st.download_button("📥 Baixar dados filtrados (CSV)", data=csv,
+                       file_name="weg_em_numeros_filtrado.csv", mime="text/csv")
+
+    with st.expander("📖 Dicionário de dados"):
+        st.markdown("""
+| Coluna | O que é |
+|---|---|
+| receita | receita líquida de vendas e serviços (conta 3.01 da DRE) |
+| lucro_bruto | receita menos o custo do que foi vendido (3.03) |
+| ebit | resultado antes do resultado financeiro e dos impostos (3.05) |
+| lucro_liquido | lucro líquido consolidado, com a parte dos minoritários (3.11) |
+| ativo_circulante / passivo_circulante | o que vira dinheiro / o que vence em até 12 meses (1.01 / 2.01) |
+| patrimonio_liquido | patrimônio líquido consolidado no fim do ano (2.03) |
+| caixa / aplicacoes | caixa e equivalentes (1.01.01) / aplicações financeiras (1.01.02) |
+| emprestimos / arrendamentos | empréstimos de curto + longo prazo (2.01.04 + 2.02.01) / arrendamentos (2.01.04.03 + 2.02.01.03) |
+| divida_liquida | empréstimos - arrendamentos - caixa - aplicações; negativa = mais caixa que dívida |
+| margem_bruta / margem_ebit / margem_liquida | lucro bruto / EBIT / lucro líquido divididos pela receita |
+| roe | lucro líquido / patrimônio líquido |
+| liquidez_corrente | ativo circulante / passivo circulante |
+| alavancagem | dívida líquida / EBIT; vazia quando o EBIT é zero ou negativo |
+| alerta_liquidez / alerta_divida | liquidez abaixo de 1,5x / alavancagem acima de 3x, ou EBIT negativo com dívida |
+
+O dicionário completo, com os tipos de cada coluna, está no README do repositório.
+""")
+
+    with st.expander("⚠️ Limitações dos dados"):
+        # r antes das aspas: o \$ impede que o markdown leia o R$ como fórmula
+        st.markdown(r"""
+- O lucro é o **consolidado** (inclui os minoritários). As notícias costumam usar o lucro dos controladores
+  (WEG 2023: R\$ 5,87 bi consolidado contra R\$ 5,73 bi dos controladores).
+- O EBIT da CVM (conta 3.05) inclui a equivalência patrimonial (pesa na Vale, na Petrobras e na Engie).
+- A alavancagem usa o EBIT e não o EBITDA, porque a depreciação não vem nos três arquivos usados.
+  Com o EBIT o número fica um pouco maior, ou seja, mais conservador.
+- A dívida líquida não conta derivativos nem arrendamentos. As empresas às vezes contam,
+  então o número pode ser diferente do release.
+- A receita da Renner inclui cerca de R\$ 2,0 bi de serviços financeiros, e o lucro da Vale em 2021 e 2022
+  inclui operações descontinuadas.
+- O Itaú (ITUB4) ficou de fora: banco usa outro plano de contas e os indicadores não se comparam.
+- São três anos e onze empresas: os números mostram o que aconteceu, não explicam por que aconteceu.
+""")
