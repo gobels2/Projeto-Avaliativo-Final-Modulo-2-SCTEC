@@ -95,7 +95,9 @@ A camada Silver (`data/silver/contas_2021_2023.csv`) fica no formato longo, com 
 
 ## Demonstração do app
 
-(em construção)
+App publicado no Streamlit Community Cloud: **https://weg-em-numeros.streamlit.app**
+
+Na barra lateral ficam os filtros (grupo de setor, empresas e período) e a origem dos dados. O app tem 4 KPIs da carteira no topo e 5 abas: WEG em foco, Crescimento, Rentabilidade, Solvência e Dados. Os dados vêm do Supabase (PostgreSQL); se o banco não responder, o app usa os CSVs da camada Gold e avisa na barra lateral.
 
 ## Como executar localmente
 
