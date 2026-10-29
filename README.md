@@ -95,15 +95,62 @@ A camada Silver (`data/silver/contas_2021_2023.csv`) fica no formato longo, com 
 
 ## Demonstração do app
 
-(em construção)
+App publicado no Streamlit Community Cloud: **https://weg-em-numeros.streamlit.app**
+
+Na barra lateral ficam os filtros (grupo de setor, empresas e período) e a origem dos dados. O app tem 4 KPIs da carteira no topo e 5 abas: WEG em foco, Crescimento, Rentabilidade, Solvência e Dados. Os dados vêm do Supabase (PostgreSQL); se o banco não responder, o app usa os CSVs da camada Gold e avisa na barra lateral.
 
 ## Como executar localmente
 
-(em construção)
+Precisa do Python 3.12 e do Git. No terminal (comandos do Windows):
+
+```bash
+git clone https://github.com/gobels2/Projeto-Avaliativo-Final-Modulo-2-SCTEC.git
+cd Projeto-Avaliativo-Final-Modulo-2-SCTEC
+py -3.12 -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Para ler os dados do Supabase, copie o `.streamlit/secrets.toml.example` para `.streamlit/secrets.toml` e preencha com os dados do seu projeto (botão Connect > Session pooler). Esse arquivo está no `.gitignore` e não vai para o GitHub. Sem ele o app funciona do mesmo jeito, lendo os CSVs da camada Gold (`data/gold/`), e avisa isso na barra lateral.
+
+Para abrir o app:
+
+```bash
+streamlit run app.py
+```
+
+Para refazer os dados do zero (opcional):
+
+```bash
+# baixa os DFPs da CVM e gera as camadas Bronze, Silver e Gold
+python src/etl.py
+# cria as tabelas no Supabase e carrega a Gold (precisa do secrets.toml)
+python src/carga_supabase.py
+```
 
 ## Estrutura de pastas
 
-(em construção)
+```text
+Projeto-Avaliativo-Final-Modulo-2-SCTEC/
+├── app.py                     # app Streamlit (dashboard)
+├── requirements.txt           # bibliotecas com versão fixa
+├── .streamlit/
+│   ├── config.toml            # tema do app (azul da WEG)
+│   └── secrets.toml.example   # modelo da conexão com o Supabase
+├── data/
+│   ├── bronze/                # dados brutos da CVM (DRE, BPA e BPP 2021–2023) e registro do download
+│   ├── silver/                # só as contas usadas, limpas, uma linha por empresa, ano e conta
+│   └── gold/                  # esquema estrela: dim_empresa, dim_tempo e fato_indicadores
+├── notebooks/                 # notebook de exploração dos dados
+├── src/
+│   ├── etl.py                 # extração e limpeza (Bronze, Silver e Gold)
+│   ├── indicadores.py         # cálculo dos indicadores financeiros
+│   └── carga_supabase.py      # carga da Gold no Supabase
+├── sql/
+│   ├── criar_tabelas.sql      # tabelas com chave primária e chave estrangeira
+│   └── consultas.sql          # consultas das perguntas de negócio
+└── docs/img/                  # prints usados no README
+```
 
 ## Gestão ágil e links do projeto
 
