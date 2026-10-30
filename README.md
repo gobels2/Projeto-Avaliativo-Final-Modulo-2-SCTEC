@@ -135,7 +135,7 @@ A camada Gold é um esquema estrela com duas dimensões e uma tabela fato, nos a
 | `alerta_liquidez` | booleano | alerta de liquidez (pergunta 4) | liquidez_corrente abaixo de 1,5 |
 | `alerta_divida` | booleano | alerta de dívida (pergunta 4) | alavancagem acima de 3, ou EBIT zero ou negativo com dívida líquida positiva |
 
-O enunciado cita Dívida Líquida / EBITDA. Aqui a alavancagem usa o EBIT, porque a depreciação não vem nos três arquivos usados (DRE, BPA e BPP); com o EBIT o número fica um pouco maior, ou seja, mais conservador.
+O enunciado cita Dívida Líquida / EBITDA. Aqui a alavancagem usa o EBIT, porque a depreciação não vem nos três arquivos usados (DRE, BPA e BPP). Como o EBIT é menor que o EBITDA, a alavancagem fica maior, e em algumas empresas bem maior (exemplos em [Discussão e limitações](#discussão-e-limitações)).
 
 O crescimento da receita não fica na fato, porque depende do período escolhido no filtro: o app calcula receita do último ano / receita do primeiro ano - 1.
 
@@ -182,7 +182,7 @@ Números do filtro padrão do app (11 empresas, 2021 a 2023), em reais, sem corr
 
 **3. Margem EBIT por grupo.** Juntando os três anos, a mediana da margem EBIT foi de 32,4% em commodities, 23,3% em consumo e serviços e 11,4% na indústria. O grupo indústria tem só duas empresas, então a mediana fica entre elas: a WEG teve margem EBIT de 16,9% a 19,9%, e a Embraer de -2,4% a 5,8%. As margens variam muito dentro de cada grupo; em commodities, por exemplo, vão de 1,5% (JBS em 2023) a 48,2% (Vale em 2021).
 
-**4. Vulnerabilidade financeira.** Em 2023, 7 das 11 empresas tiveram pelo menos um alerta. Ambev (0,89x), Petrobras (0,96x), Vale (1,28x) e Engie (1,46x) ficaram com liquidez corrente abaixo de 1,5x. JBS (13,8x), Klabin (4,9x) e Suzano (4,6x) passaram de 3x de alavancagem (dívida líquida / EBIT). A Ambev tem a menor liquidez, mas tem mais caixa do que dívida (dívida líquida de -R$ 12,8 bi), então os dois alertas precisam ser lidos juntos. A WEG não teve alerta: liquidez de 1,9x e dívida líquida negativa nos três anos (-R$ 4,2 bi em 2023).
+**4. Vulnerabilidade financeira.** Em 2023, 7 das 11 empresas tiveram pelo menos um alerta. Ambev (0,89x), Petrobras (0,96x), Vale (1,28x) e Engie (1,46x) ficaram com liquidez corrente abaixo de 1,5x. JBS (13,8x), Klabin (4,9x) e Suzano (4,6x) passaram de 3x de alavancagem (dívida líquida / EBIT, que dá um número maior que o EBITDA; ver as limitações). A Ambev tem a menor liquidez, mas tem mais caixa do que dívida (dívida líquida de -R$ 12,8 bi), então os dois alertas precisam ser lidos juntos. A WEG não teve alerta: liquidez de 1,9x e dívida líquida negativa nos três anos (-R$ 4,2 bi em 2023).
 
 **5. Distribuição da receita.** Em 2023 as 11 empresas somaram R$ 1,37 tri de receita, e 88,1% veio de commodities (consumo e serviços 7,6%, indústria 4,3%). Só Petrobras (37,3%), JBS (26,5%) e Vale (15,2%) somam 79% do total. A WEG representa 2,4%: perto das gigantes de commodities ela é pequena em valor, e o destaque dela está no crescimento e no retorno, não no tamanho.
 
@@ -196,7 +196,7 @@ O que pesa na leitura dos resultados:
 - os valores são nominais: o crescimento não desconta a inflação do período;
 - o lucro usado é o consolidado (conta 3.11), que inclui a parte dos minoritários; as notícias usam o lucro dos controladores (WEG 2023: R$ 5,87 bi consolidado contra R$ 5,73 bi dos controladores);
 - o EBIT da CVM (conta 3.05) inclui a equivalência patrimonial, o que pesa na Vale, na Petrobras e na Engie;
-- a alavancagem usa o EBIT e não o EBITDA que o enunciado cita, porque a depreciação não vem nos três arquivos usados; com o EBIT o número fica um pouco maior, ou seja, mais conservador;
+- a alavancagem usa o EBIT e não o EBITDA que o enunciado cita, porque a depreciação não vem nos três arquivos usados. Com o EBIT o número fica maior, e em algumas empresas bem maior: em 2023, somando a depreciação que está na demonstração do fluxo de caixa (DFC, que não entra no painel), a JBS teria cerca de 4,6x de dívida líquida / EBITDA contra 13,8x pelo EBIT, a Klabin 2,7x contra 4,9x e a Suzano 2,9x contra 4,6x. A régua de 3x do mercado é para o EBITDA, então o alerta de dívida do painel é mais rígido: com o EBITDA, em 2023 só a JBS passaria de 3x;
 - a dívida líquida não conta arrendamentos nem derivativos, então pode ser diferente da que a empresa divulga no release;
 - a receita da Renner inclui cerca de R$ 2,0 bi de serviços financeiros, e o lucro da Vale em 2021 e 2022 inclui operações descontinuadas;
 - o corte de 1,5x de liquidez vem do enunciado e o de 3x de alavancagem é uma régua comum de mercado; com outros cortes, a lista de empresas em alerta muda;

@@ -7,7 +7,8 @@ As fórmulas estão explicadas no README, na seção "Dicionário de dados".
 # corte de liquidez do enunciado (pergunta 4): abaixo de 1,5x a empresa entra em alerta
 LIMITE_LIQUIDEZ = 1.5
 
-# régua usual de mercado para dívida líquida / EBIT: acima de 3x a dívida é alta
+# a régua usual de mercado é 3x a dívida líquida / EBITDA; aqui ela vale para a dívida líquida / EBIT,
+# que dá um número maior (o alerta de dívida fica mais rígido)
 LIMITE_ALAVANCAGEM = 3.0
 
 

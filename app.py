@@ -632,7 +632,8 @@ O dicionário completo, com os tipos de cada coluna, está no README do reposit�
   (WEG 2023: R\$ 5,87 bi consolidado contra R\$ 5,73 bi dos controladores).
 - O EBIT da CVM (conta 3.05) inclui a equivalência patrimonial (pesa na Vale, na Petrobras e na Engie).
 - A alavancagem usa o EBIT e não o EBITDA, porque a depreciação não vem nos três arquivos usados.
-  Com o EBIT o número fica um pouco maior, ou seja, mais conservador.
+  Com o EBIT o número fica maior, e em algumas empresas bem maior (JBS 2023: 13,8x pelo EBIT e cerca de
+  4,6x pelo EBITDA). A régua de 3x do mercado é para o EBITDA, então aqui o alerta de dívida é mais rígido.
 - A dívida líquida não conta derivativos nem arrendamentos. As empresas às vezes contam,
   então o número pode ser diferente do release.
 - A receita da Renner inclui cerca de R\$ 2,0 bi de serviços financeiros, e o lucro da Vale em 2021 e 2022
