@@ -162,7 +162,7 @@ As versões das bibliotecas do app estão fixas no `requirements.txt`. O Jupyter
 
 Números do filtro padrão do app (11 empresas, 2021 a 2023), em reais, sem correção pela inflação. Os gráficos citados estão nos prints da seção [Demonstração do app](#demonstração-do-app).
 
-**1. Crescimento da receita.** A WEG foi a empresa que mais cresceu: a receita passou de R$ 23,6 bi em 2021 para R$ 32,5 bi em 2023 (+37,9%), e o lucro líquido de R$ 3,66 bi para R$ 5,87 bi. Depois vêm a Renner (+29,1%) e a Embraer (+15,2%). Quatro empresas encolheram no período: Vale (-29,1%), Engie (-14,3%), Gerdau (-12,0%) e Suzano (-3,0%), três delas de commodities. Em 2023 a carteira toda encolheu contra 2022 (receita -11,6% e lucro -40,7%), enquanto a WEG cresceu 8,7% em receita e 37,3% em lucro.
+**1. Crescimento da receita.** A WEG foi a empresa que mais cresceu: a receita passou de R$ 23,6 bi em 2021 para R$ 32,5 bi em 2023 (+37,9%), e o lucro líquido de R$ 3,66 bi para R$ 5,87 bi. Depois vêm a Renner (+29,1%) e a Embraer (+15,2%). Quatro empresas encolheram no período: Vale (-29,1%), Engie (-14,3%), Gerdau (-12,0%) e Suzano (-3,0%), três delas de commodities. Por grupo, somando a receita das empresas de cada um, a variação foi de +26,8% na indústria, +8,5% em consumo e serviços e -1,8% em commodities: o grupo que mais cresceu foi a indústria, e só o de commodities encolheu. Em 2023 a carteira toda encolheu contra 2022 (receita -11,6% e lucro -40,7%), enquanto a WEG cresceu 8,7% em receita e 37,3% em lucro.
 
 | Empresa | Grupo | Receita 2021 | Receita 2023 | Crescimento |
 |---|---|---|---|---|

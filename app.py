@@ -387,6 +387,11 @@ with aba_crescimento:
             fundo = "a maior queda" if menor["variacao"] < 0 else "o menor crescimento"
             insight = (f"De {anos[0]} a {ultimo_ano}, {topo} da receita foi da {maior['ticker']} ({variacao_maior}) "
                        f"e {fundo} foi da {menor['ticker']} ({variacao_menor}).")
+        # crescimento da receita somada de cada grupo, do maior para o menor
+        receita_grupo = df_filtrado.pivot_table(index="grupo", columns="ano", values="receita", aggfunc="sum")
+        por_grupo = (receita_grupo[ultimo_ano] / receita_grupo[anos[0]] - 1).sort_values(ascending=False)
+        lista = ", ".join(f"{grupo} {numero_br(v * 100, 1, sinal=True)}%" for grupo, v in por_grupo.items())
+        insight += f" Somando a receita por grupo: {lista}."
     else:
         insight = "Com um ano só não dá para medir crescimento: escolha pelo menos dois anos no filtro de período."
     total = df_filtrado.loc[df_filtrado["ano"] == ultimo_ano, "receita"].sum()
