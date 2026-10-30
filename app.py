@@ -350,17 +350,17 @@ with aba_weg:
                       hovertemplate="<b>%{fullData.name}</b><br>%{x}: %{text}<extra></extra>")
     graf1.plotly_chart(ajustar_layout(fig), width="stretch")
 
-    # gráfico 2: margem líquida da WEG contra a média das outras empresas selecionadas
+    # gráfico 2: margem líquida da WEG contra a mediana das outras empresas selecionadas
     linhas = weg[["ano", "margem_liquida"]].assign(serie="WEG")
     outras = df_filtrado[df_filtrado["ticker"] != "WEGE3"]
     if not outras.empty:
-        media = outras.groupby("ano", as_index=False)["margem_liquida"].mean()
-        linhas = pd.concat([linhas, media.assign(serie="Média das outras selecionadas")])
+        mediana = outras.groupby("ano", as_index=False)["margem_liquida"].median()
+        linhas = pd.concat([linhas, mediana.assign(serie="Mediana das outras selecionadas")])
     linhas["margem_pct"] = linhas["margem_liquida"] * 100
     linhas["ano"] = linhas["ano"].astype(str)
     fig = px.line(linhas, x="ano", y="margem_pct", color="serie", markers=True,
-                  color_discrete_map={"WEG": COR_WEG, "Média das outras selecionadas": COR_OUTRAS},
-                  title="Margem líquida: WEG contra a média das outras",
+                  color_discrete_map={"WEG": COR_WEG, "Mediana das outras selecionadas": COR_OUTRAS},
+                  title="Margem líquida: WEG contra a mediana das outras",
                   labels={"ano": "Ano", "margem_pct": "Margem líquida (%)", "serie": ""})
     fig.update_traces(line_width=2, marker_size=9,
                       hovertemplate="<b>%{fullData.name}</b><br>%{x}: %{y:.1f}%<extra></extra>")

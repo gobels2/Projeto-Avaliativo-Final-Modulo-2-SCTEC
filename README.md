@@ -178,7 +178,7 @@ Números do filtro padrão do app (11 empresas, 2021 a 2023), em reais, sem corr
 | EGIE3 | Consumo e serviços | R$ 12,5 bi | R$ 10,7 bi | -14,3% |
 | VALE3 | Commodities | R$ 293,5 bi | R$ 208,1 bi | -29,1% |
 
-**2. Retorno e margem.** Em 2023 o maior ROE foi da Engie (34,9%), e a WEG ficou em segundo lugar (32,9%), bem acima da mediana das 11 empresas (20,4%). O ROE da WEG subiu nos três anos: 26,1%, 28,0% e 32,9%. Já a margem líquida da WEG caiu de 15,5% para 14,3% em 2022 e subiu para 18,1% em 2023. Em 2021 e 2022 ela ficou abaixo da mediana das 11, e em 2023 a WEG ficou exatamente no meio (6ª de 11). Ou seja, a WEG está entre os maiores retornos sobre o patrimônio com uma margem líquida na média do grupo. A JBS teve prejuízo em 2023 (ROE de -1,6%).
+**2. Retorno e margem.** Em 2023 o maior ROE foi da Engie (34,9%), e a WEG ficou em segundo lugar (32,9%), bem acima da mediana das 11 empresas (20,4%). O ROE da WEG subiu nos três anos: 26,1%, 28,0% e 32,9%. Já a margem líquida da WEG caiu de 15,5% para 14,3% em 2022 e subiu para 18,1% em 2023. Em 2021 e 2022 ela ficou abaixo da mediana das 11, e em 2023 a WEG ficou exatamente no meio (6ª de 11). Ou seja, a WEG está entre os maiores retornos sobre o patrimônio com uma margem líquida no meio do grupo. A JBS teve prejuízo em 2023 (ROE de -1,6%).
 
 **3. Margem EBIT por grupo.** Juntando os três anos, a mediana da margem EBIT foi de 32,4% em commodities, 23,3% em consumo e serviços e 11,4% na indústria. O grupo indústria tem só duas empresas, então a mediana fica entre elas: a WEG teve margem EBIT de 16,9% a 19,9%, e a Embraer de -2,4% a 5,8%. As margens variam muito dentro de cada grupo; em commodities, por exemplo, vão de 1,5% (JBS em 2023) a 48,2% (Vale em 2021).
 
@@ -221,7 +221,7 @@ Guia de navegação:
 1. **Barra lateral:** escolha os grupos de setor (Indústria, Commodities, Consumo e serviços). A lista de empresas muda junto com os grupos (filtro cruzado), e dá para tirar ou pôr empresas uma a uma. Escolha o período, de 2021 a 2023. O botão "Restaurar filtros" volta tudo ao padrão. Embaixo aparece de onde vieram os dados: 🟢 Supabase (PostgreSQL) ou 🟡 CSV local, quando o banco não responde.
 2. **Topo:** 4 KPIs da carteira filtrada no último ano do período (receita líquida total, lucro líquido total, ROE médio e liquidez corrente média), com a variação contra o ano anterior.
 3. **Abas:** cada uma abre com um texto curto em três partes (Contexto, Insight e Ação), com os números calculados a partir dos filtros.
-   - **WEG em foco:** 4 indicadores da WEG, receita e lucro da WEG por ano e a margem líquida da WEG contra a média das outras empresas selecionadas.
+   - **WEG em foco:** 4 indicadores da WEG, receita e lucro da WEG por ano e a margem líquida da WEG contra a mediana das outras empresas selecionadas.
    - **Crescimento:** receita por empresa e ano, ranking do crescimento da receita no período e mapa de árvore da receita do último ano por grupo, setor e empresa.
    - **Rentabilidade:** margem líquida x ROE em quadrantes (o tamanho da bolha é a receita, as linhas tracejadas são as medianas) e boxplot da margem EBIT por grupo.
    - **Solvência:** liquidez corrente com a linha de 1,5x, dívida líquida com a alavancagem escrita em cada barra e a tabela das empresas em alerta, com o motivo.
