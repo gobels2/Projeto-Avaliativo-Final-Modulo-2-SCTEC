@@ -135,7 +135,7 @@ A camada Gold é um esquema estrela com duas dimensões e uma tabela fato, nos a
 | `alerta_liquidez` | booleano | alerta de liquidez (pergunta 4) | liquidez_corrente abaixo de 1,5 |
 | `alerta_divida` | booleano | alerta de dívida (pergunta 4) | alavancagem acima de 3, ou EBIT zero ou negativo com dívida líquida positiva |
 
-O enunciado cita Dívida Líquida / EBITDA. Aqui a alavancagem usa o EBIT, porque a depreciação não vem nos três arquivos usados (DRE, BPA e BPP); com o EBIT o número fica um pouco maior, ou seja, mais conservador.
+O enunciado cita Dívida Líquida / EBITDA. Aqui a alavancagem usa o EBIT, porque a depreciação não vem nos três arquivos usados (DRE, BPA e BPP). Como o EBIT é menor que o EBITDA, a alavancagem fica maior, e em algumas empresas bem maior (exemplos em [Discussão e limitações](#discussão-e-limitações)).
 
 O crescimento da receita não fica na fato, porque depende do período escolhido no filtro: o app calcula receita do último ano / receita do primeiro ano - 1.
 
@@ -162,7 +162,7 @@ As versões das bibliotecas do app estão fixas no `requirements.txt`. O Jupyter
 
 Números do filtro padrão do app (11 empresas, 2021 a 2023), em reais, sem correção pela inflação. Os gráficos citados estão nos prints da seção [Demonstração do app](#demonstração-do-app).
 
-**1. Crescimento da receita.** A WEG foi a empresa que mais cresceu: a receita passou de R$ 23,6 bi em 2021 para R$ 32,5 bi em 2023 (+37,9%), e o lucro líquido de R$ 3,66 bi para R$ 5,87 bi. Depois vêm a Renner (+29,1%) e a Embraer (+15,2%). Quatro empresas encolheram no período: Vale (-29,1%), Engie (-14,3%), Gerdau (-12,0%) e Suzano (-3,0%), três delas de commodities. Em 2023 a carteira toda encolheu contra 2022 (receita -11,6% e lucro -40,7%), enquanto a WEG cresceu 8,7% em receita e 37,3% em lucro.
+**1. Crescimento da receita.** A WEG foi a empresa que mais cresceu: a receita passou de R$ 23,6 bi em 2021 para R$ 32,5 bi em 2023 (+37,9%), e o lucro líquido de R$ 3,66 bi para R$ 5,87 bi. Depois vêm a Renner (+29,1%) e a Embraer (+15,2%). Quatro empresas encolheram no período: Vale (-29,1%), Engie (-14,3%), Gerdau (-12,0%) e Suzano (-3,0%), três delas de commodities. Por grupo, somando a receita das empresas de cada um, a variação foi de +26,8% na indústria, +8,5% em consumo e serviços e -1,8% em commodities: o grupo que mais cresceu foi a indústria, e só o de commodities encolheu. Em 2023 a carteira toda encolheu contra 2022 (receita -11,6% e lucro -40,7%), enquanto a WEG cresceu 8,7% em receita e 37,3% em lucro.
 
 | Empresa | Grupo | Receita 2021 | Receita 2023 | Crescimento |
 |---|---|---|---|---|
@@ -178,11 +178,11 @@ Números do filtro padrão do app (11 empresas, 2021 a 2023), em reais, sem corr
 | EGIE3 | Consumo e serviços | R$ 12,5 bi | R$ 10,7 bi | -14,3% |
 | VALE3 | Commodities | R$ 293,5 bi | R$ 208,1 bi | -29,1% |
 
-**2. Retorno e margem.** Em 2023 o maior ROE foi da Engie (34,9%), e a WEG ficou em segundo lugar (32,9%), bem acima da mediana das 11 empresas (20,4%). O ROE da WEG subiu nos três anos: 26,1%, 28,0% e 32,9%. Já a margem líquida da WEG caiu de 15,5% para 14,3% em 2022 e subiu para 18,1% em 2023. Em 2021 e 2022 ela ficou abaixo da mediana das 11, e em 2023 a WEG ficou exatamente no meio (6ª de 11). Ou seja, a WEG está entre os maiores retornos sobre o patrimônio com uma margem líquida na média do grupo. A JBS teve prejuízo em 2023 (ROE de -1,6%).
+**2. Retorno e margem.** Em 2023 o maior ROE foi da Engie (34,9%), e a WEG ficou em segundo lugar (32,9%), bem acima da mediana das 11 empresas (20,4%). O ROE da WEG subiu nos três anos: 26,1%, 28,0% e 32,9%. Já a margem líquida da WEG caiu de 15,5% para 14,3% em 2022 e subiu para 18,1% em 2023. Em 2021 e 2022 ela ficou abaixo da mediana das 11, e em 2023 a WEG ficou exatamente no meio (6ª de 11). Ou seja, a WEG está entre os maiores retornos sobre o patrimônio com uma margem líquida no meio do grupo. A JBS teve prejuízo em 2023 (ROE de -1,6%).
 
-**3. Margem EBIT por grupo.** Juntando os três anos, a mediana da margem EBIT foi de 32,4% em commodities, 23,3% em consumo e serviços e 11,4% na indústria. O grupo indústria tem só duas empresas, então a mediana fica entre elas: a WEG teve margem EBIT de 16,9% a 19,9%, e a Embraer de -2,4% a 5,8%. As margens variam muito dentro de cada grupo; em commodities, por exemplo, vão de 1,5% (JBS em 2023) a 48,2% (Vale em 2021).
+**3. Margem EBIT por grupo.** Juntando os três anos, a mediana da margem EBIT foi de 32,4% em commodities, 23,3% em consumo e serviços e 11,4% na indústria. O grupo indústria tem só duas empresas, então a mediana fica entre elas: a WEG teve margem EBIT de 16,9% a 19,9%, e a Embraer de -2,4% a 5,8%. As margens variam muito dentro de cada grupo; em commodities, por exemplo, vão de 1,5% (JBS em 2023) a 48,2% (Vale em 2021). Na margem bruta (lucro bruto / receita, na tabela da aba Dados) a ordem muda: a mediana foi de 51,1% em consumo e serviços, 43,7% em commodities e 24,6% na indústria.
 
-**4. Vulnerabilidade financeira.** Em 2023, 7 das 11 empresas tiveram pelo menos um alerta. Ambev (0,89x), Petrobras (0,96x), Vale (1,28x) e Engie (1,46x) ficaram com liquidez corrente abaixo de 1,5x. JBS (13,8x), Klabin (4,9x) e Suzano (4,6x) passaram de 3x de alavancagem (dívida líquida / EBIT). A Ambev tem a menor liquidez, mas tem mais caixa do que dívida (dívida líquida de -R$ 12,8 bi), então os dois alertas precisam ser lidos juntos. A WEG não teve alerta: liquidez de 1,9x e dívida líquida negativa nos três anos (-R$ 4,2 bi em 2023).
+**4. Vulnerabilidade financeira.** Em 2023, 7 das 11 empresas tiveram pelo menos um alerta. Ambev (0,89x), Petrobras (0,96x), Vale (1,28x) e Engie (1,46x) ficaram com liquidez corrente abaixo de 1,5x. JBS (13,8x), Klabin (4,9x) e Suzano (4,6x) passaram de 3x de alavancagem (dívida líquida / EBIT, que dá um número maior que o EBITDA; ver as limitações). A Ambev tem a menor liquidez, mas tem mais caixa do que dívida (dívida líquida de -R$ 12,8 bi), então os dois alertas precisam ser lidos juntos. A WEG não teve alerta: liquidez de 1,9x e dívida líquida negativa nos três anos (-R$ 4,2 bi em 2023).
 
 **5. Distribuição da receita.** Em 2023 as 11 empresas somaram R$ 1,37 tri de receita, e 88,1% veio de commodities (consumo e serviços 7,6%, indústria 4,3%). Só Petrobras (37,3%), JBS (26,5%) e Vale (15,2%) somam 79% do total. A WEG representa 2,4%: perto das gigantes de commodities ela é pequena em valor, e o destaque dela está no crescimento e no retorno, não no tamanho.
 
@@ -196,9 +196,9 @@ O que pesa na leitura dos resultados:
 - os valores são nominais: o crescimento não desconta a inflação do período;
 - o lucro usado é o consolidado (conta 3.11), que inclui a parte dos minoritários; as notícias usam o lucro dos controladores (WEG 2023: R$ 5,87 bi consolidado contra R$ 5,73 bi dos controladores);
 - o EBIT da CVM (conta 3.05) inclui a equivalência patrimonial, o que pesa na Vale, na Petrobras e na Engie;
-- a alavancagem usa o EBIT e não o EBITDA que o enunciado cita, porque a depreciação não vem nos três arquivos usados; com o EBIT o número fica um pouco maior, ou seja, mais conservador;
+- a alavancagem usa o EBIT e não o EBITDA que o enunciado cita, porque a depreciação não vem nos três arquivos usados. Com o EBIT o número fica maior, e em algumas empresas bem maior: em 2023, somando a depreciação que está na demonstração do fluxo de caixa (DFC, que não entra no painel), a JBS teria cerca de 4,6x de dívida líquida / EBITDA contra 13,8x pelo EBIT, a Klabin 2,7x contra 4,9x e a Suzano 2,9x contra 4,6x. A régua de 3x do mercado é para o EBITDA, então o alerta de dívida do painel é mais rígido: com o EBITDA, em 2023 só a JBS passaria de 3x;
 - a dívida líquida não conta arrendamentos nem derivativos, então pode ser diferente da que a empresa divulga no release;
-- a receita da Renner inclui cerca de R$ 2,0 bi de serviços financeiros, e o lucro da Vale em 2021 e 2022 inclui operações descontinuadas;
+- a receita da Renner inclui serviços financeiros (cerca de R$ 2,0 bi em 2023), e o lucro da Vale em 2021 e 2022 inclui operações descontinuadas;
 - o corte de 1,5x de liquidez vem do enunciado e o de 3x de alavancagem é uma régua comum de mercado; com outros cortes, a lista de empresas em alerta muda;
 - o Itaú ficou de fora, porque banco usa outro plano de contas.
 
@@ -221,7 +221,7 @@ Guia de navegação:
 1. **Barra lateral:** escolha os grupos de setor (Indústria, Commodities, Consumo e serviços). A lista de empresas muda junto com os grupos (filtro cruzado), e dá para tirar ou pôr empresas uma a uma. Escolha o período, de 2021 a 2023. O botão "Restaurar filtros" volta tudo ao padrão. Embaixo aparece de onde vieram os dados: 🟢 Supabase (PostgreSQL) ou 🟡 CSV local, quando o banco não responde.
 2. **Topo:** 4 KPIs da carteira filtrada no último ano do período (receita líquida total, lucro líquido total, ROE médio e liquidez corrente média), com a variação contra o ano anterior.
 3. **Abas:** cada uma abre com um texto curto em três partes (Contexto, Insight e Ação), com os números calculados a partir dos filtros.
-   - **WEG em foco:** 4 indicadores da WEG, receita e lucro da WEG por ano e a margem líquida da WEG contra a média das outras empresas selecionadas.
+   - **WEG em foco:** 4 indicadores da WEG, receita e lucro da WEG por ano e a margem líquida da WEG contra a mediana das outras empresas selecionadas.
    - **Crescimento:** receita por empresa e ano, ranking do crescimento da receita no período e mapa de árvore da receita do último ano por grupo, setor e empresa.
    - **Rentabilidade:** margem líquida x ROE em quadrantes (o tamanho da bolha é a receita, as linhas tracejadas são as medianas) e boxplot da margem EBIT por grupo.
    - **Solvência:** liquidez corrente com a linha de 1,5x, dívida líquida com a alavancagem escrita em cada barra e a tabela das empresas em alerta, com o motivo.
@@ -303,7 +303,7 @@ O quadro tem as colunas Backlog, A Fazer, Em Andamento, Em Revisão e Concluído
 
 ## Autoria e referências
 
-Projeto individual de **Leo Gobel** (GitHub: [gobels2](https://github.com/gobels2)) para o curso Visualização de Dados e Business Intelligence – T2 (SCTEC), professor Savio Ricardo Garcia.
+Projeto individual de **Leo Gobel** (GitHub: [gobels2](https://github.com/gobels2) · LinkedIn: [leogobel](https://www.linkedin.com/in/leogobel)) para o curso Visualização de Dados e Business Intelligence – T2 (SCTEC), professor Savio Ricardo Garcia.
 
 Referências consultadas:
 

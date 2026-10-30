@@ -147,11 +147,13 @@ def ler_csv_local():
 # guarda também a decisão por 10 minutos: com o banco fora do ar, o app não tenta de novo a cada clique
 @st.cache_data(ttl=600, show_spinner=False)
 def carregar_dados():
-    """Tenta o Supabase; se falhar, usa o CSV local e devolve o erro (em texto) para mostrar na barra lateral."""
+    """Tenta o Supabase; se falhar, usa o CSV local e devolve o tipo do erro para mostrar na barra lateral."""
     try:
         return consultar_supabase(), "Supabase (PostgreSQL)", None
     except Exception as erro:
-        return ler_csv_local(), "CSV local (data/gold)", f"{type(erro).__name__}: {erro}"
+        # a mensagem completa tem o endereço do banco: vai só para o log, não para a tela
+        print(f"Supabase falhou: {erro}")
+        return ler_csv_local(), "CSV local (data/gold)", type(erro).__name__
 
 
 def filtrar(df, grupos, empresas, anos):
@@ -249,7 +251,7 @@ else:
     st.sidebar.markdown(f"🟡 Dados do {origem}")
     with st.sidebar.expander("Por que o CSV?"):
         st.caption("Não foi possível consultar o Supabase. O app tenta de novo em 10 minutos.")
-        st.caption(erro[:300])
+        st.caption(f"Tipo do erro: {erro}")
 st.sidebar.caption("Fonte: CVM - Dados Abertos (DFP 2021–2023)")
 
 # ==============================================================================
@@ -348,17 +350,17 @@ with aba_weg:
                       hovertemplate="<b>%{fullData.name}</b><br>%{x}: %{text}<extra></extra>")
     graf1.plotly_chart(ajustar_layout(fig), width="stretch")
 
-    # gráfico 2: margem líquida da WEG contra a média das outras empresas selecionadas
+    # gráfico 2: margem líquida da WEG contra a mediana das outras empresas selecionadas
     linhas = weg[["ano", "margem_liquida"]].assign(serie="WEG")
     outras = df_filtrado[df_filtrado["ticker"] != "WEGE3"]
     if not outras.empty:
-        media = outras.groupby("ano", as_index=False)["margem_liquida"].mean()
-        linhas = pd.concat([linhas, media.assign(serie="Média das outras selecionadas")])
+        mediana = outras.groupby("ano", as_index=False)["margem_liquida"].median()
+        linhas = pd.concat([linhas, mediana.assign(serie="Mediana das outras selecionadas")])
     linhas["margem_pct"] = linhas["margem_liquida"] * 100
     linhas["ano"] = linhas["ano"].astype(str)
     fig = px.line(linhas, x="ano", y="margem_pct", color="serie", markers=True,
-                  color_discrete_map={"WEG": COR_WEG, "Média das outras selecionadas": COR_OUTRAS},
-                  title="Margem líquida: WEG contra a média das outras",
+                  color_discrete_map={"WEG": COR_WEG, "Mediana das outras selecionadas": COR_OUTRAS},
+                  title="Margem líquida: WEG contra a mediana das outras",
                   labels={"ano": "Ano", "margem_pct": "Margem líquida (%)", "serie": ""})
     fig.update_traces(line_width=2, marker_size=9,
                       hovertemplate="<b>%{fullData.name}</b><br>%{x}: %{y:.1f}%<extra></extra>")
@@ -385,6 +387,11 @@ with aba_crescimento:
             fundo = "a maior queda" if menor["variacao"] < 0 else "o menor crescimento"
             insight = (f"De {anos[0]} a {ultimo_ano}, {topo} da receita foi da {maior['ticker']} ({variacao_maior}) "
                        f"e {fundo} foi da {menor['ticker']} ({variacao_menor}).")
+        # crescimento da receita somada de cada grupo, do maior para o menor
+        receita_grupo = df_filtrado.pivot_table(index="grupo", columns="ano", values="receita", aggfunc="sum")
+        por_grupo = (receita_grupo[ultimo_ano] / receita_grupo[anos[0]] - 1).sort_values(ascending=False)
+        lista = ", ".join(f"{grupo} {numero_br(v * 100, 1, sinal=True)}%" for grupo, v in por_grupo.items())
+        insight += f" Somando a receita por grupo: {lista}."
     else:
         insight = "Com um ano só não dá para medir crescimento: escolha pelo menos dois anos no filtro de período."
     total = df_filtrado.loc[df_filtrado["ano"] == ultimo_ano, "receita"].sum()
@@ -625,10 +632,11 @@ O dicionário completo, com os tipos de cada coluna, está no README do reposit�
   (WEG 2023: R\$ 5,87 bi consolidado contra R\$ 5,73 bi dos controladores).
 - O EBIT da CVM (conta 3.05) inclui a equivalência patrimonial (pesa na Vale, na Petrobras e na Engie).
 - A alavancagem usa o EBIT e não o EBITDA, porque a depreciação não vem nos três arquivos usados.
-  Com o EBIT o número fica um pouco maior, ou seja, mais conservador.
+  Com o EBIT o número fica maior, e em algumas empresas bem maior (JBS 2023: 13,8x pelo EBIT e cerca de
+  4,6x pelo EBITDA). A régua de 3x do mercado é para o EBITDA, então aqui o alerta de dívida é mais rígido.
 - A dívida líquida não conta derivativos nem arrendamentos. As empresas às vezes contam,
   então o número pode ser diferente do release.
-- A receita da Renner inclui cerca de R\$ 2,0 bi de serviços financeiros, e o lucro da Vale em 2021 e 2022
+- A receita da Renner inclui serviços financeiros (cerca de R\$ 2,0 bi em 2023), e o lucro da Vale em 2021 e 2022
   inclui operações descontinuadas.
 - O Itaú (ITUB4) ficou de fora: banco usa outro plano de contas e os indicadores não se comparam.
 - São três anos e onze empresas: os números mostram o que aconteceu, não explicam por que aconteceu.
