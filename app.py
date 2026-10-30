@@ -636,7 +636,7 @@ O dicionário completo, com os tipos de cada coluna, está no README do reposit�
   4,6x pelo EBITDA). A régua de 3x do mercado é para o EBITDA, então aqui o alerta de dívida é mais rígido.
 - A dívida líquida não conta derivativos nem arrendamentos. As empresas às vezes contam,
   então o número pode ser diferente do release.
-- A receita da Renner inclui cerca de R\$ 2,0 bi de serviços financeiros, e o lucro da Vale em 2021 e 2022
+- A receita da Renner inclui serviços financeiros (cerca de R\$ 2,0 bi em 2023), e o lucro da Vale em 2021 e 2022
   inclui operações descontinuadas.
 - O Itaú (ITUB4) ficou de fora: banco usa outro plano de contas e os indicadores não se comparam.
 - São três anos e onze empresas: os números mostram o que aconteceu, não explicam por que aconteceu.

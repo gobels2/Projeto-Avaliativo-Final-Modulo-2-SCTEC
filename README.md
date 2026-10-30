@@ -180,7 +180,7 @@ Números do filtro padrão do app (11 empresas, 2021 a 2023), em reais, sem corr
 
 **2. Retorno e margem.** Em 2023 o maior ROE foi da Engie (34,9%), e a WEG ficou em segundo lugar (32,9%), bem acima da mediana das 11 empresas (20,4%). O ROE da WEG subiu nos três anos: 26,1%, 28,0% e 32,9%. Já a margem líquida da WEG caiu de 15,5% para 14,3% em 2022 e subiu para 18,1% em 2023. Em 2021 e 2022 ela ficou abaixo da mediana das 11, e em 2023 a WEG ficou exatamente no meio (6ª de 11). Ou seja, a WEG está entre os maiores retornos sobre o patrimônio com uma margem líquida no meio do grupo. A JBS teve prejuízo em 2023 (ROE de -1,6%).
 
-**3. Margem EBIT por grupo.** Juntando os três anos, a mediana da margem EBIT foi de 32,4% em commodities, 23,3% em consumo e serviços e 11,4% na indústria. O grupo indústria tem só duas empresas, então a mediana fica entre elas: a WEG teve margem EBIT de 16,9% a 19,9%, e a Embraer de -2,4% a 5,8%. As margens variam muito dentro de cada grupo; em commodities, por exemplo, vão de 1,5% (JBS em 2023) a 48,2% (Vale em 2021).
+**3. Margem EBIT por grupo.** Juntando os três anos, a mediana da margem EBIT foi de 32,4% em commodities, 23,3% em consumo e serviços e 11,4% na indústria. O grupo indústria tem só duas empresas, então a mediana fica entre elas: a WEG teve margem EBIT de 16,9% a 19,9%, e a Embraer de -2,4% a 5,8%. As margens variam muito dentro de cada grupo; em commodities, por exemplo, vão de 1,5% (JBS em 2023) a 48,2% (Vale em 2021). Na margem bruta (lucro bruto / receita, na tabela da aba Dados) a ordem muda: a mediana foi de 51,1% em consumo e serviços, 43,7% em commodities e 24,6% na indústria.
 
 **4. Vulnerabilidade financeira.** Em 2023, 7 das 11 empresas tiveram pelo menos um alerta. Ambev (0,89x), Petrobras (0,96x), Vale (1,28x) e Engie (1,46x) ficaram com liquidez corrente abaixo de 1,5x. JBS (13,8x), Klabin (4,9x) e Suzano (4,6x) passaram de 3x de alavancagem (dívida líquida / EBIT, que dá um número maior que o EBITDA; ver as limitações). A Ambev tem a menor liquidez, mas tem mais caixa do que dívida (dívida líquida de -R$ 12,8 bi), então os dois alertas precisam ser lidos juntos. A WEG não teve alerta: liquidez de 1,9x e dívida líquida negativa nos três anos (-R$ 4,2 bi em 2023).
 
@@ -198,7 +198,7 @@ O que pesa na leitura dos resultados:
 - o EBIT da CVM (conta 3.05) inclui a equivalência patrimonial, o que pesa na Vale, na Petrobras e na Engie;
 - a alavancagem usa o EBIT e não o EBITDA que o enunciado cita, porque a depreciação não vem nos três arquivos usados. Com o EBIT o número fica maior, e em algumas empresas bem maior: em 2023, somando a depreciação que está na demonstração do fluxo de caixa (DFC, que não entra no painel), a JBS teria cerca de 4,6x de dívida líquida / EBITDA contra 13,8x pelo EBIT, a Klabin 2,7x contra 4,9x e a Suzano 2,9x contra 4,6x. A régua de 3x do mercado é para o EBITDA, então o alerta de dívida do painel é mais rígido: com o EBITDA, em 2023 só a JBS passaria de 3x;
 - a dívida líquida não conta arrendamentos nem derivativos, então pode ser diferente da que a empresa divulga no release;
-- a receita da Renner inclui cerca de R$ 2,0 bi de serviços financeiros, e o lucro da Vale em 2021 e 2022 inclui operações descontinuadas;
+- a receita da Renner inclui serviços financeiros (cerca de R$ 2,0 bi em 2023), e o lucro da Vale em 2021 e 2022 inclui operações descontinuadas;
 - o corte de 1,5x de liquidez vem do enunciado e o de 3x de alavancagem é uma régua comum de mercado; com outros cortes, a lista de empresas em alerta muda;
 - o Itaú ficou de fora, porque banco usa outro plano de contas.
 
@@ -303,7 +303,7 @@ O quadro tem as colunas Backlog, A Fazer, Em Andamento, Em Revisão e Concluído
 
 ## Autoria e referências
 
-Projeto individual de **Leo Gobel** (GitHub: [gobels2](https://github.com/gobels2)) para o curso Visualização de Dados e Business Intelligence – T2 (SCTEC), professor Savio Ricardo Garcia.
+Projeto individual de **Leo Gobel** (GitHub: [gobels2](https://github.com/gobels2) · LinkedIn: [leogobel](https://www.linkedin.com/in/leogobel)) para o curso Visualização de Dados e Business Intelligence – T2 (SCTEC), professor Savio Ricardo Garcia.
 
 Referências consultadas:
 
