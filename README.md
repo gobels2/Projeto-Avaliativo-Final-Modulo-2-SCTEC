@@ -160,15 +160,57 @@ As versões das bibliotecas do app estão fixas no `requirements.txt`. O Jupyter
 
 ## Principais resultados
 
-(em construção)
+Números do filtro padrão do app (11 empresas, 2021 a 2023), em reais, sem correção pela inflação. Os gráficos citados estão nos prints da seção [Demonstração do app](#demonstração-do-app).
+
+**1. Crescimento da receita.** A WEG foi a empresa que mais cresceu: a receita passou de R$ 23,6 bi em 2021 para R$ 32,5 bi em 2023 (+37,9%), e o lucro líquido de R$ 3,66 bi para R$ 5,87 bi. Depois vêm a Renner (+29,1%) e a Embraer (+15,2%). Quatro empresas encolheram no período: Vale (-29,1%), Engie (-14,3%), Gerdau (-12,0%) e Suzano (-3,0%), três delas de commodities. Em 2023 a carteira toda encolheu contra 2022 (receita -11,6% e lucro -40,7%), enquanto a WEG cresceu 8,7% em receita e 37,3% em lucro.
+
+| Empresa | Grupo | Receita 2021 | Receita 2023 | Crescimento |
+|---|---|---|---|---|
+| WEGE3 | Indústria | R$ 23,6 bi | R$ 32,5 bi | +37,9% |
+| LREN3 | Consumo e serviços | R$ 10,6 bi | R$ 13,6 bi | +29,1% |
+| EMBR3 | Indústria | R$ 22,7 bi | R$ 26,1 bi | +15,2% |
+| PETR4 | Commodities | R$ 452,7 bi | R$ 512,0 bi | +13,1% |
+| ABEV3 | Consumo e serviços | R$ 72,9 bi | R$ 79,7 bi | +9,4% |
+| KLBN11 | Commodities | R$ 16,5 bi | R$ 18,0 bi | +9,4% |
+| JBSS3 | Commodities | R$ 350,7 bi | R$ 363,8 bi | +3,7% |
+| SUZB3 | Commodities | R$ 41,0 bi | R$ 39,8 bi | -3,0% |
+| GGBR4 | Commodities | R$ 78,3 bi | R$ 68,9 bi | -12,0% |
+| EGIE3 | Consumo e serviços | R$ 12,5 bi | R$ 10,7 bi | -14,3% |
+| VALE3 | Commodities | R$ 293,5 bi | R$ 208,1 bi | -29,1% |
+
+**2. Retorno e margem.** Em 2023 o maior ROE foi da Engie (34,9%), e a WEG ficou em segundo lugar (32,9%), bem acima da mediana das 11 empresas (20,4%). O ROE da WEG subiu nos três anos: 26,1%, 28,0% e 32,9%. Já a margem líquida da WEG caiu de 15,5% para 14,3% em 2022 e subiu para 18,1% em 2023. Em 2021 e 2022 ela ficou abaixo da mediana das 11, e em 2023 a WEG ficou exatamente no meio (6ª de 11). Ou seja, a WEG está entre os maiores retornos sobre o patrimônio com uma margem líquida na média do grupo. A JBS teve prejuízo em 2023 (ROE de -1,6%).
+
+**3. Margem EBIT por grupo.** Juntando os três anos, a mediana da margem EBIT foi de 32,4% em commodities, 23,3% em consumo e serviços e 11,4% na indústria. O grupo indústria tem só duas empresas, então a mediana fica entre elas: a WEG teve margem EBIT de 16,9% a 19,9%, e a Embraer de -2,4% a 5,8%. As margens variam muito dentro de cada grupo; em commodities, por exemplo, vão de 1,5% (JBS em 2023) a 48,2% (Vale em 2021).
+
+**4. Vulnerabilidade financeira.** Em 2023, 7 das 11 empresas tiveram pelo menos um alerta. Ambev (0,89x), Petrobras (0,96x), Vale (1,28x) e Engie (1,46x) ficaram com liquidez corrente abaixo de 1,5x. JBS (13,8x), Klabin (4,9x) e Suzano (4,6x) passaram de 3x de alavancagem (dívida líquida / EBIT). A Ambev tem a menor liquidez, mas tem mais caixa do que dívida (dívida líquida de -R$ 12,8 bi), então os dois alertas precisam ser lidos juntos. A WEG não teve alerta: liquidez de 1,9x e dívida líquida negativa nos três anos (-R$ 4,2 bi em 2023).
+
+**5. Distribuição da receita.** Em 2023 as 11 empresas somaram R$ 1,37 tri de receita, e 88,1% veio de commodities (consumo e serviços 7,6%, indústria 4,3%). Só Petrobras (37,3%), JBS (26,5%) e Vale (15,2%) somam 79% do total. A WEG representa 2,4%: perto das gigantes de commodities ela é pequena em valor, e o destaque dela está no crescimento e no retorno, não no tamanho.
 
 ## Discussão e limitações
 
-(em construção)
+Os números mostram o que aconteceu com essas 11 empresas de 2021 a 2023, mas não explicam por que aconteceu. Não dá para dizer, por exemplo, que a margem ou o ROE da WEG explicam a fortuna das famílias fundadoras, nem que o crescimento vai se repetir nos próximos anos.
+
+O que pesa na leitura dos resultados:
+
+- são só 3 anos e 11 empresas, e o grupo indústria tem duas empresas, então a mediana dele depende muito da Embraer;
+- os valores são nominais: o crescimento não desconta a inflação do período;
+- o lucro usado é o consolidado (conta 3.11), que inclui a parte dos minoritários; as notícias usam o lucro dos controladores (WEG 2023: R$ 5,87 bi consolidado contra R$ 5,73 bi dos controladores);
+- o EBIT da CVM (conta 3.05) inclui a equivalência patrimonial, o que pesa na Vale, na Petrobras e na Engie;
+- a alavancagem usa o EBIT e não o EBITDA que o enunciado cita, porque a depreciação não vem nos três arquivos usados; com o EBIT o número fica um pouco maior, ou seja, mais conservador;
+- a dívida líquida não conta arrendamentos nem derivativos, então pode ser diferente da que a empresa divulga no release;
+- a receita da Renner inclui cerca de R$ 2,0 bi de serviços financeiros, e o lucro da Vale em 2021 e 2022 inclui operações descontinuadas;
+- o corte de 1,5x de liquidez vem do enunciado e o de 3x de alavancagem é uma régua comum de mercado; com outros cortes, a lista de empresas em alerta muda;
+- o Itaú ficou de fora, porque banco usa outro plano de contas.
+
+Próximos passos: incluir 2024 e 2025 (o ETL só precisa de mais anos na lista `ANOS`), corrigir os valores pela inflação e comparar a WEG com mais empresas da indústria.
 
 ## Aplicação profissional
 
-(em construção)
+Para o investidor pessoa física de longo prazo, o painel serve como uma primeira triagem antes de ler os balanços: comparar a margem e o ROE de cada empresa com a mediana das outras, olhar os dois alertas juntos (liquidez e dívida) e, a cada novo balanço, conferir se a WEG mantém a margem e o caixa maior que a dívida. O painel não é recomendação de compra ou venda.
+
+Para o gestor financeiro de uma indústria da região, a WEG serve de referência: dá para comparar a margem EBIT e a liquidez da própria empresa com as da WEG e com a mediana da indústria. A regra de alerta do painel (liquidez abaixo de 1,5x ou alavancagem acima de 3x) pode virar um checklist simples antes de dar crédito a um cliente ou de fechar contrato com um fornecedor grande.
+
+Para um diretor financeiro, o pipeline mostra como montar esse acompanhamento com dados públicos e gratuitos da CVM, atualizado a cada novo DFP, sem digitar nenhum número à mão.
 
 ## Demonstração do app
 
